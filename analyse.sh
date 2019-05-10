@@ -163,20 +163,6 @@ if [ "$mode" = "fcnc" ] || [ "$mode" = "full" ]; then
   if [ "$mode" = "sm" ]; then exit; fi
 else echo "$myname, skip sm analyse"; fi
 
-if [ "$mode" = "fcnc_var" ] || [ "$mode" = "full" ]; then
-  mkdir -p "$workdir/fcnc_var" && cd "$_"
-  python $cfgdir/create_card.py --fname="fcnc_tug_jul_expected_variation" --nbins=$nbins --niters=$niters --input="$workdir/hists/hists_FCNC_tug.root" --mode="latex theta"
-  
-  for name in fcnc_*cfg; do
-    echo $name
-    $srcdir/run_theta.sh $name
-
-    filename="${name%.*}"
-    root -q -b -l "$srcdir/getTable.cpp(\"$filename.root\", \"$filename\", $burn_in_frac)"
-    pdflatex -interaction=batchmode getTable_$filename.tex
-  done;
-fi
-
 
 
 
