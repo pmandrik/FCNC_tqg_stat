@@ -126,29 +126,6 @@ if [ "$mode" = "sm" ] || [ "$mode" = "full" ]; then
   if [ "$mode" = "sm" ]; then exit; fi
 else echo "$myname, skip sm analyse"; fi
 
-#---------- 4. Get FCNC limits
-if [ "$mode" = "sm" ] || [ "$mode" = "full" ]; then
-  echo "$myname, SM ... "
-  mkdir -p "$workdir/sm" && cd "$_"
-
-  if [ "$package" = "theta" ] || [ "$package" = "all" ]; then
-    python $cfgdir/create_card.py --fname="sm_jul" --nbins=$nbins --niters=$niters --input="$workdir/hists/hists_SM.root" --mode="latex theta mRoot"
-    $srcdir/run_theta.sh sm_jul_theta.cfg
-    root -q -b -l "$srcdir/burnInStudy.cpp(\"sm_jul_theta.root\", \"sigma_t_ch\", \"sm_theta\")"
-    root -q -b -l "$srcdir/getTable.cpp(\"sm_jul_theta.root\", \"sm_theta\", $burn_in_frac)"
-    pdflatex -interaction=batchmode getTable_sm_theta.tex
-
-    root -q -b -l "$srcdir/getPostHists.cpp(\"$workdir/hists/hists_SM.root\", \"sm_jul_mroot.txt\", \"sm_jul_theta.root\")"
-    root -q -b -l "$srcdir/histsPlot.cpp(\"SM_after\",\"postfit_hists/posthists.root\")"
-    root -q -b -l "$srcdir/histsChecker.cpp(\"$workdir/hists/hists_SM.root\",\"./postfit_hists/posthists.root\", \"SM_comp_\")"
-  fi
-
-  python $cfgdir/create_card.py --fname="sm_jul" --nbins=$nbins --niters=$niters --input="$workdir/hists/hists_SM.root" --mode="latex"
-  pdflatex -interaction=batchmode model_sm_jul.tex
-
-  if [ "$mode" = "sm" ]; then exit; fi
-else echo "$myname, skip sm analyse"; fi
-
 #---------- 5. Run FCNC analyse
 set -x
 if [ "$mode" = "fcnc" ] || [ "$mode" = "full" ]; then
