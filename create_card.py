@@ -42,18 +42,39 @@ def sm_jul(args):
     "ttbar",   0.15, '(-4.0,5.0)',
     "Diboson", 0.20, '(-3.0,3.0)',
     "DY",      0.20, '(-3.0,3.0)',
-    "WQQ",     0.30, '(-1.0,4.5)',
-    "Wc",      0.30, '(-2.5,2.0)',
-    "Wb",      0.30, '(-2.5,3.5)',
-    "Wother",  0.30, '(-3.5,1.5)',
-    "QCD",     0.40, '(-3.0,1.5)',
+    #"WQQ",     0.30, '(-1.0,4.5)',
+    #"Wc",      0.30, '(-2.5,2.0)',
+    #"Wb",      0.30, '(-2.5,3.5)',
+    #"Wother",  0.30, '(-3.5,1.5)',
+    "Wjets",   0.30, '(-3.5,1.5)',
+    "QCD",     0.80, '(-3.0,1.5)',
   ]
 
-  mult_pars = ["id", "iso", "trig", "lumi"]
-  mult_errs = [0.005, 0.002, 0.002, 0.062]
+  mult_pars = ["lumi"]
+  mult_errs = [0.025]
+  #mult_pars = []
+  #mult_errs = []
 
+  #interp_pars  = ["btag_jes", "btag_lf", "btag_hf", "btag_hfstats1", "btag_hfstats2", "btag_lfstats1", "btag_lfstats2", "btag_cferr1", "btag_cferr2"]
+  #interp_pars  = ["btag_lf", "btag_hf", "btag_hfstats1", "btag_hfstats2", "btag_lfstats1", "btag_lfstats2", "btag_cferr1", "btag_cferr2"]
+  interp_pars  = ["TagRate", "MistagRate"]
+  #interp_pars += ["PileUp", "JER", "UnclMET", "JECF", "JECB"]
+  interp_pars += ["PileUp", "JER", "UnclMET", "JEC"]
+  interp_pars += ["LepId", "LepTrig", "LepIso"]
+  interp_pars += ["Fac", "Ren", "RenFac"]
+  #interp_pars += ["Isr_red", "Fsr_red"]
 
-  interp_pars  = ["TagRate", "MistagRate", "PileUp", "JER", "UnclMET", "JECF", "JECB"]
+  pss = ["_G2GG_muR_", "_G2QQ_muR_", "_Q2QG_muR_", "_X2XG_muR_", "_G2GG_cNS_", "_G2QQ_cNS_", "_Q2QG_cNS_", "_X2XG_cNS_"]
+  # pss = ["_G2GG_muR_", "_G2QQ_muR_", "_Q2QG_muR_", "_X2XG_muR_", "_G2GG_cNS_"]
+  pss_names = []
+
+  for item in ["isr", "fsr"] :
+    for ps in pss:
+      interp_pars += [ item + ps ]
+      pss_names += [ item + ps ]
+
+  has_red = ["s_ch", "t_ch", "ttbar"]
+  has_isr = ["s_ch", "t_ch", "ttbar", "tW_ch"]
 
   datacard.parameters_order_list  = [ "sigma_" + name for name, err, rang in zip( chanals_names[::3], chanals_names[1::3], chanals_names[2::3] ) ] 
   datacard.parameters_order_list += mult_pars + interp_pars
@@ -78,6 +99,13 @@ def sm_jul(args):
     chanal        = atd.Chanal( name )
     chanal.parameters = copy.copy(common_mult_pars)
 
+    interp_pars = []
+    for param in common_interp_pars:
+      if param.name in ["Fac", "Ren", "RenFac"]  and name not in has_red : continue
+      if param.name in ["Isr_red", "Fsr_red"]  and name not in has_isr : continue
+      if param.name in pss_names and name not in has_isr : continue
+      interp_pars += [ param ]
+
     if name != "t_ch":
       norm_parameter = atd.Parameter( "sigma_" + name, "log_normal", "mult")
       norm_parameter.options["mean"]  =  0.0
@@ -90,7 +118,7 @@ def sm_jul(args):
       norm_parameter.options["range"] = rang
       chanal.parameters += [ norm_parameter ]
 
-    if name != "QCD" : chanal.parameters += common_interp_pars
+    if name != "QCD" : chanal.parameters += interp_pars
 
     datacard.chanals += [ chanal ]
 
@@ -169,7 +197,11 @@ def fcnc_1d_jul(args, coupling_hist_name):
   mult_pars = ["id", "iso", "trig", "lumi"]
   mult_errs = [0.005, 0.002, 0.002, 0.062]
 
-  interp_pars  = ["TagRate", "MistagRate", "PileUp", "JER", "UnclMET", "JECF", "JECB"]
+  #interp_pars = ["PileUp", "JEC", "JER", "UnclMET", 
+  #interp_pars = ["PileUp", "JER", "UnclMET", 
+  #               "btag_lf", "btag_hf", "btag_hfstats1", "btag_hfstats2", "btag_lfstats1", "btag_lfstats2", "btag_cferr1", "btag_cferr2" ]
+  interp_pars  = ["TagRate", "MistagRate"]
+  interp_pars += ["PileUp", "JER", "UnclMET", "JECF", "JECB"]
 
   datacard.parameters_order_list = [ "sigma_" + name for name, err in zip( chanals_names[::2], chanals_names[1::2] ) ] + mult_pars + interp_pars
 
@@ -223,6 +255,151 @@ def fcnc_tcg_jul(args):
   datacard = fcnc_1d_jul(args, "fcnc_tcg")
   datacard.name = "fcnc_tcg_jul"
   return datacard
+
+def fcnc_1d_jul_expected(args, coupling_hist_name):
+  datacard = atd.DatacardMaster("fcnc_1d_jul_CHANGE_THIS_NAME", args.nbins)
+
+  chanals_names = [
+    "t_ch",    0.10,
+    "s_ch",    0.10,
+    "tW_ch",   0.15,
+    "ttbar",   0.15,
+    "Diboson", 0.20,
+    "DY",      0.20,
+    "WQQ",     0.30,
+    "Wc",      0.30,
+    "Wb",      0.30,
+    "Wother",  0.30,
+    "QCD",     0.40,
+    coupling_hist_name, 0.0,
+  ]
+
+  mult_pars = ["id", "iso", "trig", "lumi"]
+  mult_errs = [0.005, 0.002, 0.002, 0.062]
+
+  #interp_pars = ["PileUp", "JEC", "JER", "UnclMET", 
+  #interp_pars = ["PileUp", "JER", "UnclMET", 
+  #               "btag_lf", "btag_hf", "btag_hfstats1", "btag_hfstats2", "btag_lfstats1", "btag_lfstats2", "btag_cferr1", "btag_cferr2" ]
+  interp_pars  = ["TagRate", "MistagRate"]
+  interp_pars += ["PileUp", "JER", "UnclMET", "JECF", "JECB"]
+
+  datacard.parameters_order_list = [ "sigma_" + name for name, err in zip( chanals_names[::2], chanals_names[1::2] ) ] + mult_pars + interp_pars
+
+  # define common mult parameters
+  common_mult_pars = []
+  for name, err in zip(mult_pars, mult_errs) :
+    parameter = atd.Parameter( name, "log_normal", "mult")
+    parameter.options["mean"]    =  0.0
+    parameter.options["width"]   =  err
+    parameter.options["range"]   =  '(0.0,5.0)'
+    common_mult_pars += [ parameter ]
+
+  # define common interp parameters
+  common_interp_pars = []
+  for name in interp_pars :
+    parameter = atd.Parameter( name, "gauss", "shape")
+    common_interp_pars += [ parameter ]
+
+  # define chanals
+  chanal_fcnc_tcg, chanal_fcnc_tug = None, None
+  for name, err in zip( chanals_names[::2], chanals_names[1::2] ):
+    chanal        = atd.Chanal( name )
+    chanal.parameters = copy.copy(common_mult_pars)
+    if name ==  "fcnc_tcg": chanal_fcnc_tcg = chanal
+    if name ==  "fcnc_tug": chanal_fcnc_tug = chanal
+
+    if name not in ["fcnc_tug", "fcnc_tcg"]:
+      norm_parameter = atd.Parameter( "sigma_" + name, "log_normal", "mult")
+      norm_parameter.options["mean"]    =  0.0
+      norm_parameter.options["width"]   =  err
+      norm_parameter.options["range"] = '(-5.0,5.0)'
+      chanal.parameters += [ norm_parameter ]
+    if name == "fcnc_tcg" :
+      norm_parameter = atd.Parameter("KC", "flat_distribution", "mult")
+      norm_parameter.options["mean"]  = 0.0
+      norm_parameter.options["range"] = '(0.0,4.0)'
+      chanal.parameters += [ norm_parameter, norm_parameter ]
+    if name == "fcnc_tug" :
+      norm_parameter = atd.Parameter("KU", "flat_distribution", "mult")
+      norm_parameter.options["mean"]  = 0.0
+      norm_parameter.options["range"] = '(0.0,4.0)'
+      chanal.parameters += [ norm_parameter, norm_parameter ]
+    if name != "QCD" : chanal.parameters += common_interp_pars
+    datacard.chanals += [ chanal ]
+
+  #  define expected data model
+  print datacard.model_name_toy
+  datacard.model_name_toy = "expected_data"
+  if chanal_fcnc_tcg : chanal_fcnc_tcg.used_in_toydata = False
+  if chanal_fcnc_tug : chanal_fcnc_tug.used_in_toydata = False
+
+  return datacard
+
+def fcnc_tug_jul_expected(args):
+  datacard = fcnc_1d_jul_expected(args, "fcnc_tug")
+  datacard.name = "fcnc_tug_jul_expected"
+  return datacard
+
+def fcnc_tcg_jul_expected(args):
+  datacard = fcnc_1d_jul_expected(args, "fcnc_tcg")
+  datacard.name = "fcnc_tcg_jul_expected"
+  return datacard
+
+def fcnc_tug_jul_expected_variation(args):
+  datacard = fcnc_1d_jul_expected(args, "fcnc_tug")
+  datacard.name = "fcnc_tug_jul_expected"
+
+  datacard.input_file_mc   = args.input
+  datacard.input_file_data = args.input_data
+  datacard.mcmc_iters      = args.niters
+  datacard.enable_barlow_beston = False
+  datacard.seed            = 0
+  datacard.dice_poisson    = False
+  datacard.dice_systematic = False
+  datacard.azimov          = True
+  datacard.mcmc_chains     = 1
+
+  chanals_names = {
+    "t_ch":    0.10,
+    "s_ch":    0.10,
+    "tW_ch":   0.15,
+    "ttbar":   0.15,
+    "Diboson": 0.20,
+    "DY":      0.20,
+    "WQQ":     0.30,
+    "Wc":      0.30,
+    "Wb":      0.30,
+    "Wother" :  0.30,
+    "QCD" :     0.40,
+  }
+
+  for channel in datacard.chanals:
+    dcard = copy.deepcopy(datacard)
+    dcard.name = dcard.name + "_" + channel.name
+    if channel.name not in chanals_names.keys() : continue
+
+    for chan in dcard.chanals:
+      #if chan.name != channel.name : continue
+
+      chan.toy_normalization = 0.60
+      dcard_minus = copy.deepcopy(dcard)
+      dcard_minus.name = dcard.name + "_minus"
+      dcard_minus.save( args.mode.split(" ") )
+
+      chan.toy_normalization = 1.40
+      dcard_plus  = copy.deepcopy(dcard)
+      dcard_plus.name = dcard.name + "_plus"
+      dcard_plus.save( args.mode.split(" ") )
+
+  return None
+
+
+
+
+
+
+
+
 
 def fcnc_jul_unmarg(args, datacard, coupling_name):
   datacard.input_file_mc   = args.input
@@ -307,7 +484,7 @@ if __name__ == "__main__":
       datacard.dice_poisson    = False
       datacard.dice_systematic = False
       datacard.azimov          = True
-      datacard.enable_barlow_beston = False
+      datacard.enable_barlow_beston = True
 
       datacard.save( args.mode.split(" ") )
   else     : atd.test()
