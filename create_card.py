@@ -36,36 +36,33 @@ def sm_jul(args):
   datacard = atd.DatacardMaster("sm_jul", args.nbins)
 
   chanals_names = [
-    "t_ch",    0.10, '(-0.5,0.5)',
+    "t_ch",    31./207., '(-0.5,0.5)', # 0.10
     "s_ch",    0.10, '(-2.85,3.0)',
     "tW_ch",   0.15, '(-6.0,-1.5)',
     "ttbar",   0.15, '(-4.0,5.0)',
     "Diboson", 0.20, '(-3.0,3.0)',
     "DY",      0.20, '(-3.0,3.0)',
-    #"WQQ",     0.30, '(-1.0,4.5)',
-    #"Wc",      0.30, '(-2.5,2.0)',
-    #"Wb",      0.30, '(-2.5,3.5)',
-    #"Wother",  0.30, '(-3.5,1.5)',
-    "Wjets",   0.30, '(-3.5,1.5)',
+    "WQQ",     0.30, '(-1.0,4.5)',
+    "Wc",      0.30, '(-2.5,2.0)',
+    "Wb",      0.30, '(-2.5,3.5)',
+    "Wother",  0.30, '(-3.5,1.5)',
+    #"Wjets",   0.30, '(-3.5,1.5)',
     "QCD",     0.80, '(-3.0,1.5)',
   ]
 
   mult_pars = ["lumi"]
   mult_errs = [0.025]
-  #mult_pars = []
-  #mult_errs = []
 
-  #interp_pars  = ["btag_jes", "btag_lf", "btag_hf", "btag_hfstats1", "btag_hfstats2", "btag_lfstats1", "btag_lfstats2", "btag_cferr1", "btag_cferr2"]
-  #interp_pars  = ["btag_lf", "btag_hf", "btag_hfstats1", "btag_hfstats2", "btag_lfstats1", "btag_lfstats2", "btag_cferr1", "btag_cferr2"]
   interp_pars  = ["TagRate", "MistagRate"]
-  #interp_pars += ["PileUp", "JER", "UnclMET", "JECF", "JECB"]
   interp_pars += ["PileUp", "JER", "UnclMET", "JEC"]
-  interp_pars += ["LepId", "LepTrig", "LepIso"]
-  interp_pars += ["Fac", "Ren", "RenFac"]
-  #interp_pars += ["Isr_red", "Fsr_red"]
+  # interp_pars += ["LepId", "LepTrig", "LepIso"]
+  ren_pars     = ["Fac", "Ren", "RenFac"]
+  interp_pars += ren_pars
+  xsr_pars     = ["Isr_red", "Fsr_red"]
+  interp_pars += xsr_pars
 
   pss = ["_G2GG_muR_", "_G2QQ_muR_", "_Q2QG_muR_", "_X2XG_muR_", "_G2GG_cNS_", "_G2QQ_cNS_", "_Q2QG_cNS_", "_X2XG_cNS_"]
-  # pss = ["_G2GG_muR_", "_G2QQ_muR_", "_Q2QG_muR_", "_X2XG_muR_", "_G2GG_cNS_"]
+  pss = []
   pss_names = []
 
   for item in ["isr", "fsr"] :
@@ -73,7 +70,7 @@ def sm_jul(args):
       interp_pars += [ item + ps ]
       pss_names += [ item + ps ]
 
-  has_red = ["s_ch", "t_ch", "ttbar"]
+  has_red = ["s_ch", "t_ch", "ttbar", "WQQ", "Wb", "Wc", "Wother", "DY"]
   has_isr = ["s_ch", "t_ch", "ttbar", "tW_ch"]
 
   datacard.parameters_order_list  = [ "sigma_" + name for name, err, rang in zip( chanals_names[::3], chanals_names[1::3], chanals_names[2::3] ) ] 
@@ -101,8 +98,8 @@ def sm_jul(args):
 
     interp_pars = []
     for param in common_interp_pars:
-      if param.name in ["Fac", "Ren", "RenFac"]  and name not in has_red : continue
-      if param.name in ["Isr_red", "Fsr_red"]  and name not in has_isr : continue
+      if param.name in ren_pars  and name not in has_red : continue
+      if param.name in xsr_pars  and name not in has_isr : continue
       if param.name in pss_names and name not in has_isr : continue
       interp_pars += [ param ]
 

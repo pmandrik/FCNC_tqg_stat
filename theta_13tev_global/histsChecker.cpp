@@ -2,6 +2,9 @@
 #include <regex>
 #include "/afs/cern.ch/user/p/pmandrik/public/global_cfg/msg.hh"
 #include "/afs/cern.ch/user/p/pmandrik/public/global_cfg/mRootNiceColors.cpp"
+
+#include "/afs/cern.ch/user/p/pmandrik/public/PMANDRIK_LIBRARY/pmlib_root_hist_drawer.hh"
+
 using namespace mRoot;
 
 vector <TObject*> * get_all_from_folder(TDirectory * dir, string include_rexp=".+", string exclude_rexp=""){
@@ -47,28 +50,37 @@ void check_template(TH1 * hist){
   if(hist_is_ok) msg("hist is ok ", hist->GetName());
 }
 
-void histsChecker(TString inputFileName, TString postfix){
+#include "/afs/cern.ch/user/p/pmandrik/public/global_cfg/mRootStackDrawer.cpp"
+void histsChecker(TString inputFileName, TString postfix, string diff_mode, int dummy){
   // TString inp_file_name = "hists13Charlie_SM.root";
   // TString inp_file_name = "hist_copy.root";
   // TString inp_file_name = "hists13Charlie_SM_fix.root";
   gErrorIgnoreLevel = kWarning;
   TFile * file = TFile::Open(inputFileName);
+    
+  mRoot::StackDrawer drawer;
+  drawer.AddHistsFromFile( file, "W.+", "(Wjets)|(.+Down$)|(.+Up$)|(.+_alt)|(.+_weight_.+)|(.+_scale_.+)" );
+  drawer.legend_width = 0.25;
+  drawer.data_hist = (TH1D*)file->Get("Wjets");
 
+  TCanvas * canv = drawer.GetCanvas( "Comparison_wjets" );
+  canv->Print( "Comparison_wjets.png" );
+  
   // draw all hists
   // for every draw central and shifted hists
   auto hists_central = get_all_from_folder(file, ".+", "(.+Down$)|(.+Up$)|(.+_alt)|(.+_weight_.+)|(.+_scale_.+)");
   vector <int> indexes = getNiceColors(50);
 
   for(auto hist : *hists_central){
-    TCanvas * canv = new TCanvas(hist->GetName(), hist->GetName(), 640 * 3, 640);
-    canv->Divide(3, 1);
+    TCanvas * canv = new TCanvas(hist->GetName(), hist->GetName(), 640 * 3, 640*2);
+
+    canv->Divide(3, 2);
   
     TH1* h = (TH1*)hist;
 
     cout << " " << h->GetName() << " ... " << endl;
     check_template(h);
 
-    double max = h->GetMaximum();
     auto shifts = get_all_from_folder(file, string(hist->GetName()) + "_.+", "("+string(hist->GetName()) + "_alt.*)|(.+_weight_.+)");
     int color_i = 0;
     h->SetLineColor( 1 );
@@ -76,19 +88,20 @@ void histsChecker(TString inputFileName, TString postfix){
 
     TLegend * legend = new TLegend(0.05,0.05,0.95,0.95);
     legend->AddEntry(h,  h->GetName(), "l");
-    
-    canv->cd(1);
-    h->Draw("hist");
+   
 
     list<TH1D*> herrs;
     string lname = "";
+    int index = 0;
+    int prev_index = -1;
+
+    vector<TH1*> hists_other;
     for(auto shift : *shifts){
       TH1* hs = (TH1*)shift;
       check_template(hs);
-      hs->Draw("hist same");
-      if(max < hs->GetMaximum()) max = hs->GetMaximum();
       hs->SetLineColor( indexes.at(color_i) );
       hs->SetLineWidth( 2 );
+      hists_other.push_back( hs );
 
       lname.size() < string(hs->GetTitle()).size() ? lname = string(hs->GetTitle()) : lname;
 
@@ -99,6 +112,8 @@ void histsChecker(TString inputFileName, TString postfix){
       hist_err->SetFillStyle( 3000+color_i );
       hist_err->SetFillColor( indexes.at(color_i) );
       color_i += 1;
+
+      index++;
 
       for(int i = 1; i < hist_err->GetNbinsX()+1; i++){
         hist_err->SetBinContent(i, abs(hist_err->GetBinContent(i)));
@@ -114,9 +129,14 @@ void histsChecker(TString inputFileName, TString postfix){
       skipp_add: ;
     }
 
-
-    h->GetYaxis()->SetRangeUser(0, max+max*0.1);
-    h->Draw("hist same");
+    // TH1D* central, const std::vector<TH1D*> & others
+    for(int i = 1; i <= 4; i ++){
+      canv->cd( i );
+      vector<TH1*> hists_other_i;
+      for(int j = (i-1) * hists_other.size() / 4; j < i * hists_other.size() / 4 ; j++ )
+        hists_other_i.push_back( hists_other.at(j) );
+      pm::draw_hists_difference( h, hists_other_i, diff_mode );
+    }
 
     THStack * stack = new THStack(TString(h->GetName()) + "_stack", TString(h->GetName()) + "_stack");
     for(auto it = herrs.begin(); it!=herrs.end(); ++it){
@@ -128,64 +148,13 @@ void histsChecker(TString inputFileName, TString postfix){
       legend->AddEntry(*it,  title.c_str(), "lf");
     }
 
-    canv->cd(2);
+    canv->cd(5);
     legend->Draw();
 
-    canv->cd(3);
+    canv->cd(6);
     stack->Draw("hist f");
 
     canv->Print(postfix + TString(hist->GetTitle()) + TString(".png"));
-
-    // Draw relative fluctuatios
-/*
-    for(auto shift : *shifts){
-      TH1* hs = (TH1*)shift;
-
-      string name_canv = string(h->GetName()) + "_" + hs->GetName();
-      TCanvas * canv_rel = new TCanvas(name_canv.c_str(), name_canv.c_str(), 640, 640);
-      TH1D* hist_err = (TH1D*)hs->Clone();
-      hist_err->Add( h, -1. );
-      hist_err->Divide( h );
-      hist_err->SetLineWidth( 2 );
-      hist_err->SetStats(false);
-      hist_err->Draw("hist");
-      hist_err->SetLineColor(kRed);
-
-      string error_name = string( hs->GetName() ).substr( string(hist->GetTitle()).size()+1, string( hs->GetName() ).size() );
-      if( error_name.at( error_name.size()-1 ) == 'n' ) continue;
-      error_name = error_name.substr( 0, error_name.size()-2 );
-      cout << error_name << endl;
-
-      TH1D* shift_down = nullptr;
-      for(auto shift_d : *shifts){
-        TH1D* hs_hist = (TH1D*)shift_d;
-        string hist_name_full = string( hs_hist->GetName() );
-        if( hist_name_full.size() < string(hist->GetTitle()).size() ) continue;
-        string channel_name = string( hs_hist->GetName() ).substr(0, string(hist->GetTitle()).size() );
-        // cout << channel_name << " " << string(hist->GetTitle()) << endl;
-        if(channel_name != string(hist->GetTitle()) ) continue;
-        string error_name_down = string( hs_hist->GetName() ).substr( string(hist->GetTitle()).size()+1, string( hs_hist->GetName() ).size() );
-        if( error_name_down.at( error_name_down.size()-1 ) != 'n' ) continue;
-        error_name_down = error_name_down.substr( 0, error_name_down.size()-4 );
-        //cout << error_name_down << " <= " << endl;
-        if(error_name_down != error_name) continue;
-        cout << "!!! " << hs->GetName() << " " << hs_hist->GetName() << endl;
-        shift_down = (TH1D*)hs_hist->Clone();
-        shift_down->Add( h, -1. );
-        shift_down->Divide( h );
-      }
-      shift_down->Draw("SAME hist");
-      shift_down->Print();
-      shift_down->SetLineColor(kBlue);
-      
-      double max = TMath::Max(hist_err->GetBinContent(hist_err->GetMaximumBin()), shift_down->GetBinContent(shift_down->GetMaximumBin()));
-      double min = TMath::Min(hist_err->GetBinContent(hist_err->GetMinimumBin()), shift_down->GetBinContent(shift_down->GetMinimumBin()));
-      if(min > 0) hist_err->SetMinimum( min*0.9 );
-      else        hist_err->SetMinimum( min*1.1 );
-      hist_err->SetMaximum( max*1.1 );
-      canv_rel->Print(postfix + TString(hist->GetTitle()) + TString("_err_") + hs->GetName() + TString(".png"));
-    }
-*/
   }
 
 }
