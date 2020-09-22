@@ -42,12 +42,32 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
 
   // VARIATION_SYS_T2 = vector_sum( VARIATION_SYS_T2_base, VARIATION_SYS_T2_extra1, VARIATION_SYS_T2_extra2, VARIATION_SYS_T2_extra3);
   VARIATION_SYS_T2 = vector_sum( VARIATION_SYS_T2_base, VARIATION_SYS_T2_extra1 );
+  
+  vector<string> JER_SYS_FOLDERS = {"eta0-193", "eta193-25", "eta25-3_p0-50", "eta25-3_p50-Inf", "eta3-5_p0-50", "eta3-5_p50-Inf"};
+  vector<string> JER_SYS_U, JER_SYS_D;
+  for(auto it : JER_SYS_FOLDERS){
+    JER_SYS_U.push_back( "JERUp_" + it );
+    JER_SYS_D.push_back( "JERDown_" + it );
+  }
+  vector<string> JER_SYS_NAMES = {"JER_eta0_193", "JER_eta193_25", "JER_eta25_3_p0_50", "JER_eta25_3_p50_Inf", "JER_eta3_5_p0_50", "JER_eta3_5_p50_Inf"};
+
+  vector<string> JEC_SYS_FOLDERS = {"eta0-25", "eta25-5"};
+  vector<string> JEC_SYS_U, JEC_SYS_D;
+  for(auto it : JEC_SYS_FOLDERS){
+    JEC_SYS_U.push_back( "JECUp_" + it );
+    JEC_SYS_D.push_back( "JECDown_" + it );
+  }
+  vector<string> JEC_SYS_NAMES = {"JEC_eta0_25", "JEC_eta25_5",};
 
   string PREFIX_NTUPLES;
   string PATH_PREFIX;
   string PATH_EXCLUDE;
   string PATH_SUSTEMATIC;
-  if(RELEASE=="SYS_DEC_N"){ 
+  bool BACKGROUND_QCD_CUT = false;
+  if(RELEASE=="2017_v_15june2020_B") BACKGROUND_QCD_CUT = true;
+  if(RELEASE=="2020_06_08_jerc_wjets_B") BACKGROUND_QCD_CUT = true;
+
+  if(RELEASE=="2017_v_15june2020_S" or RELEASE=="2017_v_15june2020_B"){ 
 /*
     PATH_PREFIX     = "/scratch/gvorotni/13TeV/samples/19-12-04_psweights/tuples_merged/";
     PATH_EXCLUDE    = "/scratch/gvorotni/13TeV/samples/19-12-04_psweights/";
@@ -55,9 +75,18 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
 */
     string ppath = "/scratch/common/samples/2020-03-17_bugfix/";
     ppath = "/scratch/common/samples/2020-05-01_pujetid/";
-    PATH_PREFIX     = ppath + "tuples_merged/";
-    PATH_EXCLUDE    = ppath;
-    PATH_SUSTEMATIC = ppath + "tuples_merged/Syst/";
+    ppath = "/scratch/gvorotni/13TeV/samples/2020-06-08_jerc_wjets/";
+    PATH_PREFIX     = ppath + "tuples_merged/" ;
+    PATH_EXCLUDE    = ppath ;
+    PATH_SUSTEMATIC = ppath + "tuples_merged/Syst/" ;
+  }
+  else if(RELEASE=="2020_06_08_jerc_wjets_S" or RELEASE=="2020_06_08_jerc_wjets_B"){ 
+    string ppath = "/scratch/pvolkov/samples/2020-06-08_jerc_wjets/" ;
+           ppath = "/scratch2/gvorotni/13TeV/samples/2020-06-08_jerc_wjets/" ;
+                // "/scratch2/gvorotni/13TeV/samples/2020-06-08_jerc_wjets/" ;
+    PATH_PREFIX     = ppath + "tuples_merged/" ;
+    PATH_EXCLUDE    = ppath ;
+    PATH_SUSTEMATIC = ppath + "tuples_merged/Syst/" ;
   }
   else{
     cerr << "Unknow RELEASE, please provide correct value, exit ..." << endl;
@@ -84,7 +113,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
   vector <string> FILES_DATA        = {"Data.root"};
 
   //---------- 2. QCD DATA -------------------------------------------------------------------------------------------------------------------------
-  vector <string> FILES_QCD_DATA    = {"QCD_new.root"}; // QCD_data.root
+  vector <string> FILES_QCD_DATA    = {"QCD_data.root"}; // QCD_data.root
 
   //---------- 3. OTHER -------------------------------------------------------------------------------------------------------------------------
   vector <string> FILES_DY     = {"DY-10-50.root", "DY-50-Inf.root"};
@@ -104,6 +133,8 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
   vector <string> FILES_FCNC_TUG    = {"FCNC_tug.root"};
   vector <string> FILES_FCNC_TCG    = {"FCNC_tcg.root"};
 
+  // FILES_TC = FILES_TC_CH;
+
   //---------- FILL HISTS -------------------------------------------------------------------------------------------------------------------------
   string tree_name = "Vars";
   // double rmin = 30, rmax = 180; 
@@ -114,7 +145,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
 
   if(MODE == "QCD"){
     out_file = new TFile(OUTPUT_FILE_NAME.c_str(), "RECREATE");
-    vrule    = "BNN_qcd_fcnc_new"; // "BNN_qcd"; 
+    vrule    = "BNN_qcd_tchan_5vars"; // "BNN_qcd"; 
 
     PREFIX_NTUPLES = PATH_PREFIX + CENTRAL_FOLDER +"/";
     EventsExcluder * excl = nullptr;
@@ -130,7 +161,11 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
   }
   else if(MODE == "SM" or MODE == "FCNC_tug" or MODE == "FCNC_tcg"){
     out_file = new TFile(OUTPUT_FILE_NAME.c_str(), "RECREATE");
-    string qcd_qut = "(BNN_qcd_fcnc_new > " + std::to_string( QCD_qut ) + ") * (N_BJ==1)"; // "(BNN_qcd > 0.7)";
+
+    // BNN_sm_pow_comph и BNN_qcd_tchan_2 BNN_qcd_tchan_5vars
+    string qcd_qut   = "(BNN_qcd_tchan_5vars > " + std::to_string( QCD_qut ) + ") * (N_BJ==1)"; // "(BNN_qcd > 0.7)";
+    if( BACKGROUND_QCD_CUT ) qcd_qut = "(BNN_qcd_tchan_5vars > 0.2) * (BNN_qcd_tchan_5vars < " + std::to_string( QCD_qut ) + ") * (N_BJ==1)"; // "(BNN_qcd > 0.7)";
+    // qcd_qut = "1.";
 
     string data_selection   = qcd_qut;
     string mc_selection     = qcd_qut + " * weight";
@@ -140,8 +175,8 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
 
     // SM < 
     if(MODE == "SM"){
-      vrule = "BNN_sm_new"; // "BNN_sm"
-      // vrule = "Pt_J2";
+      vrule = "BNN_sm_powheg_comphep"; // "BNN_sm"
+      if( BACKGROUND_QCD_CUT ) vrule = "BNN_qcd_tchan_5vars";
       excl = new EventsExcluder( PATH_EXCLUDE + "sm/bnn_sm_trainEvents.txt" );
     }
     //vrule = "Eta_LJ";
@@ -184,6 +219,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
     // fill_hist("Wlight",  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wlight, excl);
     // fill_hist("Wjets",   NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection,        excl);
     fill_hist("t_ch",    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC,  tree_name, vrule, mc_selection,        excl);
+    //fill_hist("t_alt",    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC_CH,  tree_name, vrule, mc_selection,        excl);
 
     if(MODE == "FCNC_tug") fill_hist("fcnc_tug",  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_FCNC_TUG,  tree_name, vrule, mc_selection, excl);
     if(MODE == "FCNC_tcg") fill_hist("fcnc_tcg",  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_FCNC_TCG,  tree_name, vrule, mc_selection, excl);
@@ -244,13 +280,81 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
       fill_hist_sys("Wb_"+systematic_,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, wb_fact_up + mc_selection_up+SELECTION_Wb, wb_fact_dn + mc_selection_down+SELECTION_Wb,   excl);
       fill_hist_sys("Wother_"+systematic_,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, wother_fact_up + mc_selection_up+SELECTION_Wother, wother_fact_dn + mc_selection_down+SELECTION_Wother, excl);
       // fill_hist_sys("Wjets_"+systematic_,   NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, wj_fact_up + mc_selection_up, wj_fact_dn + mc_selection_down, excl);
-      fill_hist_sys("t_ch_"+systematic_,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC,     tree_name, vrule, tc_fact_up + mc_selection_up, tc_fact_dn + mc_selection_down, excl);
+      fill_hist_sys("t_ch_"+systematic_,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC, tree_name, vrule, tc_fact_up+mc_selection_up, tc_fact_dn+mc_selection_down, excl);
+      //fill_hist_sys("t_alt_"+systematic_, NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC, tree_name, vrule, mc_selection_up, mc_selection_down, excl);
       if(MODE == "FCNC_tug") fill_hist_sys("fcnc_tug_"+systematic_,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_FCNC_TUG,  tree_name, vrule, tug_fact_up + mc_selection_up, tug_fact_dn + mc_selection_down,        excl);
       if(MODE == "FCNC_tcg") fill_hist_sys("fcnc_tcg_"+systematic_,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_FCNC_TCG,  tree_name, vrule, tcg_fact_dn + mc_selection_up, tcg_fact_dn + mc_selection_down,        excl);
     }
 
+
     // FILL SYSTEMATIC WITCH PRESENT IN THE DIFFERENT F0LDERS
     for(auto fprefix : VARIATION_SYS_T1){
+      if( fprefix == "JER" ){
+        // vector<string> JER_SYS_U, JER_SYS_D;
+        // vector<string> JER_SYS_NAMES = {"eta0_193", "eta193_25", "eta25_3_p0_50", "eta25_3_p50_Inf", "eta3_5_p0_50", "eta3_5_p50_Inf"};
+        for(int i = 0; i < JER_SYS_NAMES.size(); i++){
+          string jer_bin_name = JER_SYS_NAMES[i];
+          vector<string> jer_bin_files = { JER_SYS_D[i], JER_SYS_U[i] };
+          vector<string> jer_bin_file_pstfixs = {"Down", "Up"};
+          for(int j = 0; j < 2; j++){
+            string extra_select = "";
+            string pstfix = jer_bin_file_pstfixs[j];
+            string sname = jer_bin_name + pstfix;
+            PREFIX_NTUPLES = PATH_PREFIX + jer_bin_files[j] + "/";
+            string PREFIX_NTUPLES_ALT = "/scratch2/gvorotni/13TeV/samples/2020-06-08_jerc_wjets/tuples_temp/" + jer_bin_files[j] + "/";
+            
+            cout << "process folder ... " << PREFIX_NTUPLES << endl;
+            fill_hist("DY_"+sname,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_DY_ALT,  tree_name, vrule, mc_selection + extra_select,        excl);
+            if(jer_bin_files[j] == "JERDown_eta193-25") 
+                 fill_hist("ttbar_"+sname,   NBINS, rmin, rmax, out_file, PREFIX_NTUPLES_ALT, FILES_TT,  tree_name, vrule, mc_selection + extra_select,        excl);
+            else fill_hist("ttbar_"+sname,   NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TT,  tree_name, vrule, mc_selection + extra_select,        excl);
+            fill_hist("Diboson_"+sname, NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_DB,  tree_name, vrule, mc_selection + extra_select,        excl);
+            fill_hist("s_ch_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_SC,  tree_name, vrule, mc_selection_sch + extra_select,        excl);
+            fill_hist("tW_ch_"+sname,   NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TW,  tree_name, vrule, mc_selection_TW + extra_select,        excl);
+            fill_hist("WQQ_"+sname,     NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_WQQ + extra_select,    excl);
+            fill_hist("Wc_"+sname,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wc + extra_select,     excl);
+            fill_hist("Wb_"+sname,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wb + extra_select,     excl);
+            fill_hist("Wother_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wother + extra_select, excl);
+            fill_hist("t_ch_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC,  tree_name, vrule, mc_selection + extra_select,        excl);
+            //fill_hist("t_alt_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC_CH,  tree_name, vrule, mc_selection + extra_select,        excl);
+
+            if(MODE == "FCNC_tug") fill_hist("fcnc_tug_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_FCNC_TUG,  tree_name, vrule, mc_selection + extra_select, excl);
+            if(MODE == "FCNC_tcg") fill_hist("fcnc_tcg_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_FCNC_TCG,  tree_name, vrule, mc_selection + extra_select, excl);
+          }
+        }
+      }
+      if( fprefix == "JEC" ){
+        for(int i = 0; i < JEC_SYS_NAMES.size(); i++){
+          string jec_bin_name = JEC_SYS_NAMES[i];
+          vector<string> jec_bin_files = { JEC_SYS_D[i], JEC_SYS_U[i] };
+          vector<string> jec_bin_file_pstfixs = {"Down", "Up"};
+          for(int j = 0; j < 2; j++){
+            string extra_select = "";
+            string pstfix = jec_bin_file_pstfixs[j];
+            string sname = jec_bin_name + pstfix;
+            PREFIX_NTUPLES = PATH_PREFIX + jec_bin_files[j] + "/";
+            string PREFIX_NTUPLES_ALT = "/scratch2/gvorotni/13TeV/samples/2020-06-08_jerc_wjets/tuples_temp/" + jec_bin_files[j] + "/";
+            cout << "process folder ... " << PREFIX_NTUPLES << endl;
+            fill_hist("DY_"+sname,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_DY_ALT,  tree_name, vrule, mc_selection + extra_select,        excl);
+            if(jec_bin_files[j] == "JECDown" or jec_bin_files[j] == "JECUp_eta0-25" or jec_bin_files[j] == "JECUp_eta25-5")
+                 fill_hist("ttbar_"+sname,   NBINS, rmin, rmax, out_file, PREFIX_NTUPLES_ALT, FILES_TT,  tree_name, vrule, mc_selection + extra_select,        excl);
+            else fill_hist("ttbar_"+sname,   NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TT,  tree_name, vrule, mc_selection + extra_select,        excl);
+            fill_hist("Diboson_"+sname, NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_DB,  tree_name, vrule, mc_selection + extra_select,        excl);
+            fill_hist("s_ch_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_SC,  tree_name, vrule, mc_selection_sch + extra_select,        excl);
+            fill_hist("tW_ch_"+sname,   NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TW,  tree_name, vrule, mc_selection_TW + extra_select,        excl);
+            fill_hist("WQQ_"+sname,     NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_WQQ + extra_select,    excl);
+            fill_hist("Wc_"+sname,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wc + extra_select,     excl);
+            fill_hist("Wb_"+sname,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wb + extra_select,     excl);
+            fill_hist("Wother_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wother + extra_select, excl);
+            fill_hist("t_ch_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC,  tree_name, vrule, mc_selection + extra_select,        excl);
+            //fill_hist("t_alt_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC_CH,  tree_name, vrule, mc_selection + extra_select,        excl);
+
+            if(MODE == "FCNC_tug") fill_hist("fcnc_tug_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_FCNC_TUG,  tree_name, vrule, mc_selection + extra_select, excl);
+            if(MODE == "FCNC_tcg") fill_hist("fcnc_tcg_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_FCNC_TCG,  tree_name, vrule, mc_selection + extra_select, excl);
+          }
+        }
+      }
+
       vector<string> pstfixs = {"Down", "Up"};
       for(auto pstfix : pstfixs){
         string extra_select = "";
@@ -269,6 +373,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
         fill_hist("Wother_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wother + extra_select, excl);
         // fill_hist("Wjets_"+sname,   NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection + extra_select,        excl);
         fill_hist("t_ch_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC,  tree_name, vrule, mc_selection + extra_select,        excl);
+        //fill_hist("t_alt_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC_CH,  tree_name, vrule, mc_selection + extra_select,        excl);
 
         if(MODE == "FCNC_tug") fill_hist("fcnc_tug_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_FCNC_TUG,  tree_name, vrule, mc_selection + extra_select, excl);
         if(MODE == "FCNC_tcg") fill_hist("fcnc_tcg_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_FCNC_TCG,  tree_name, vrule, mc_selection + extra_select, excl);
@@ -279,6 +384,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
   else if(MODE == "SM_unmarg" or MODE == "FCNC_tug_unmarg" or MODE == "FCNC_tcg_unmarg"){
     out_file = new TFile(OUTPUT_FILE_NAME.c_str(), "RECREATE");
     string qcd_qut = "(BNN_qcd_bugfix > 0.7)";
+    
 
     string data_selection = qcd_qut;
     string mc_selection   = qcd_qut + " * weight_norm";

@@ -4,7 +4,7 @@
 
 nbins=10
 niters=500000
-release="SYS_DEC_N"  # "PUPPI_JID" "CHS_JID" "PUPPI_JID_BTAG" "PUPPI_JID_JECB" "PUPPI_JID_JECF"
+release="2020_06_08_jerc_wjets" # "2017_v_15june2020" "PUPPI_JID" "CHS_JID" "PUPPI_JID_BTAG" "PUPPI_JID_JECB" "PUPPI_JID_JECF"
 burn_in_frac=0.1 
 
 mode=$1
@@ -53,7 +53,7 @@ cd $workdir
 if [ "$mode" = "qcd" ] || [ "$mode" = "full" ]; then
   rm -rf "$workdir/qcd" && mkdir "$_" && cd "$_"
   echo "$myname, find QCD normalization ... "
-  root -q -b -l "$cfgdir/tree_to_hists.C(\"QCD\",\"$release\",\"hists_QCD.root\",$nbins)"
+  root -q -b -l "$cfgdir/tree_to_hists.C(\"QCD\",\""$release"_S\",\"hists_QCD.root\",$nbins)"
   root -q -b -l "$srcdir/histsPlot.cpp(\"QCD_before\", \"hists_QCD.root\")"
 
   python $cfgdir/create_card.py --fname="qcd_jul" --nbins=$nbins --input="hists_QCD.root" --mode="theta"
@@ -78,11 +78,19 @@ make_hists_sm(){
   nbins_=$1
   QCD_norm_=$2
   qcd_cut_=$3
-  root -q -b -l "$cfgdir/tree_to_hists.C(\"SM\", \"$release\", \"hists_SM.root\", $nbins_, $QCD_norm_, $qcd_cut_)"
+
+  root -q -b -l "$cfgdir/tree_to_hists.C(\"SM\", \""$release"_S\", \"hists_SM.root\", $nbins_, $QCD_norm_, $qcd_cut_)"
   root -q -b -l "$srcdir/histsPlot.cpp(\"SM_before\",\"hists_SM.root\")"
   root -q -b -l "$srcdir/histsChecker.cpp(\"hists_SM.root\",\"SM_\", \"\", 1)"
   root -q -b -l "$srcdir/histsChecker.cpp(\"hists_SM.root\",\"SMDIFF_\", \"diff\", 1)"
   root -q -b -l "$srcdir/histsChecker.cpp(\"hists_SM.root\",\"SMDIFFPERCENT_\", \"diff percent\", 1)"
+
+  root -q -b -l "$cfgdir/tree_to_hists.C(\"SM\", \""$release"_B\", \"hists_BG.root\", $nbins_, $QCD_norm_, $qcd_cut_)"
+  root -q -b -l "$srcdir/histsPlot.cpp(\"BG_before\",\"hists_BG.root\")"
+  root -q -b -l "$srcdir/histsChecker.cpp(\"hists_BG.root\",\"BG_\", \"\", 1)"
+
+  root -l -b -q "$cfgdir/combine.C(\"hists_SM.root\", \"hists_BG.root\", \"hists_COMB.root\")"
+  return
 }
 
 if [ "$mode" = "hists" ] || [ "$mode" = "full" ]; then
@@ -108,14 +116,14 @@ if [ "$mode" = "hists" ] || [ "$mode" = "full" ]; then
   fi
 
   if [ "$package" = "fcnc" ] || [ "$package" = "all" ]; then
-    root -q -b -l "$cfgdir/tree_to_hists.C(\"FCNC_tcg\",\"$release\",\"hists_FCNC_tcg.root\",$nbins, $QCD_norm)"
-    root -q -b -l "$cfgdir/tree_to_hists.C(\"FCNC_tug\",\"$release\",\"hists_FCNC_tug.root\",$nbins, $QCD_norm)"
+    root -q -b -l "$cfgdir/tree_to_hists.C(\"FCNC_tcg\",\""$release"_S\",\"hists_FCNC_tcg.root\",$nbins, $QCD_norm, 0.70)"
+    root -q -b -l "$cfgdir/tree_to_hists.C(\"FCNC_tug\",\""$release"_S\",\"hists_FCNC_tug.root\",$nbins, $QCD_norm, 0.70)"
 
     root -q -b -l "$srcdir/histsPlot.cpp(\"FCNC_tug\",\"hists_FCNC_tug.root\")"
-    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tug.root\",\"FCNC_tug_\")"
+    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tug.root\",\"FCNC_tug_\", 1)"
 
     root -q -b -l "$srcdir/histsPlot.cpp(\"FCNC_tcg\",\"hists_FCNC_tcg.root\")"
-    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tcg.root\",\"FCNC_tcg_\")"
+    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tcg.root\",\"FCNC_tcg_\", 1)"
   fi
 
   if [ "$mode" = "hists" ]; then exit; fi
@@ -143,6 +151,13 @@ if [ "$mode" = "sm" ] || [ "$mode" = "full" ]; then
   if [ "$package" = "def" ] || [ "$package" = "all" ]; then
     mkdir -p "$workdir/sm" && cd "$_"
     make_analyse_sm "$workdir/hists/hists_SM.root" 10
+    mv getTable_SM.pdf table_sm_theta_def.pdf
+  fi
+
+  if [ "$package" = "comb" ] || [ "$package" = "all" ]; then
+    mkdir -p "$workdir/sm" && cd "$_"
+    make_analyse_sm "$workdir/hists/hists_COMB.root" 20
+    mv getTable_SM.pdf table_sm_theta_comb.pdf
   fi
 
   if [ "$package" = "qcd" ] || [ "$package" = "all" ]; then

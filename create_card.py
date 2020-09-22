@@ -47,15 +47,17 @@ def sm_jul(args):
     "Wb",      0.30, '(-2.5,3.5)',
     "Wother",  0.30, '(-3.5,1.5)',
     #"Wjets",   0.30, '(-3.5,1.5)',
-    "QCD",     0.80, '(-3.0,1.5)',
+    "QCD",     1.00, '(-3.0,1.5)',
   ]
 
   mult_pars = ["lumi"]
   mult_errs = [0.025]
 
   interp_pars  = ["TagRate", "MistagRate"]
-  interp_pars += ["PileUp", "JER", "UnclMET", "JEC"]
-  # interp_pars += ["LepId", "LepTrig", "LepIso"]
+  interp_pars += ["PileUp", "UnclMET"]
+  interp_pars += ["JER_eta0_193", "JER_eta193_25", "JER_eta25_3_p0_50", "JER_eta25_3_p50_Inf", "JER_eta3_5_p0_50", "JER_eta3_5_p50_Inf"]
+  interp_pars += ["JEC_eta0_25", "JEC_eta25_5"]
+  interp_pars += ["LepId", "LepTrig", "LepIso"]
   ren_pars     = ["Fac", "Ren", "RenFac"]
   interp_pars += ren_pars
   xsr_pars     = ["Isr_red", "Fsr_red"]
@@ -72,6 +74,9 @@ def sm_jul(args):
 
   has_red = ["s_ch", "t_ch", "ttbar", "WQQ", "Wb", "Wc", "Wother", "DY"]
   has_isr = ["s_ch", "t_ch", "ttbar", "tW_ch"]
+  
+  has_red = ["s_ch", "ttbar", "WQQ", "Wb", "Wc", "Wother", "DY"]
+  has_isr = ["s_ch", "ttbar", "tW_ch"]
 
   datacard.parameters_order_list  = [ "sigma_" + name for name, err, rang in zip( chanals_names[::3], chanals_names[1::3], chanals_names[2::3] ) ] 
   datacard.parameters_order_list += mult_pars + interp_pars
