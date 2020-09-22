@@ -1,5 +1,5 @@
 
-Скопировать tree_to_hists.C, analyse.sh и create_card.py в локалбную директори.
+Скопировать tree_to_hists.C, analyse.sh и create_card.py в локальную директори.
 Перед запуском отредактировать tree_to_hists.C:
   * нужно добавить релиз RELEASE, который также будет использоваться при вызовах в analyse.sh и указать путь до используемых файлов после мензуры в строчках https://github.com/pmandrik/FCNC_tqg_stat/blob/master/tree_to_hists.C#L38
   * в строчках https://github.com/pmandrik/FCNC_tqg_stat/blob/83ff99b6a1b674e36dba2fb74704786db26a5218/tree_to_hists.C#L106
