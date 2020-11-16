@@ -4,7 +4,7 @@
 
 nbins=10
 niters=500000
-release="2020_06_08_jerc_wjets" # "2017_v_15june2020" "PUPPI_JID" "CHS_JID" "PUPPI_JID_BTAG" "PUPPI_JID_JECB" "PUPPI_JID_JECF"
+release="2020_novenber" # "2017_v_15june2020" "PUPPI_JID" "CHS_JID" "PUPPI_JID_BTAG" "PUPPI_JID_JECB" "PUPPI_JID_JECF"
 burn_in_frac=0.1 
 
 mode=$1

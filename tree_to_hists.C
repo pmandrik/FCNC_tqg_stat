@@ -34,15 +34,18 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
   //---------- 0. PATH -------------------------------------------------------------------------------------------------------------------------
   string CENTRAL_FOLDER        = "Central";
   vector<string> VARIATION_SYS_T1 = {"JEC", "JER", "UnclMET", }; // SYSTEMATIC WITCH PRESENT IN THE DIFFERENT FILES
-  vector<string> VARIATION_SYS_T2 = {"PileUp", /*"btag_jes",*/ "btag_lf", "btag_hf", "btag_hfstats1", "btag_hfstats2", "btag_lfstats1", "btag_lfstats2", "btag_cferr1", "btag_cferr2" }; // SYSTEMATIC WITCH PRESENT IN THE CENTRAL SAME FILES
-  vector<string> VARIATION_SYS_T2_base = {"PileUp", "TagRate", "MistagRate", "Ren", "Fac", "RenFac", "LepId", "LepIso", "LepTrig"}; // SYSTEMATIC WITCH PRESENT IN THE CENTRAL SAME FILES
+                 VARIATION_SYS_T1 = { "UnclMET" };
+  vector<string> VARIATION_SYS_T2 = {}; // SYSTEMATIC WITCH PRESENT IN THE CENTRAL SAME FILES
+  vector<string> VARIATION_SYS_T2_base = {"pdf", "PUJetIdTag", "PUJetIdMistag", "PileUp", /*"TagRate", "MistagRate",*/ "Ren", "Fac", "RenFac", "LepId", "LepIso", "LepTrig"}; // SYSTEMATIC WITCH PRESENT IN THE CENTRAL SAME FILES
   vector<string> VARIATION_SYS_T2_extra1 = {"Isr", "Fsr"}; // _red _con
   vector<string> VARIATION_SYS_T2_extra2 = {"_G2GG_muR_", "_G2QQ_muR_", "_Q2QG_muR_", "_X2XG_muR_", "_G2GG_cNS_", "_G2QQ_cNS_", "_Q2QG_cNS_", "_X2XG_cNS_"}; // isr up
   vector<string> VARIATION_SYS_T2_extra3 = {"fsr_G2GG_muR_", "fsr_G2QQ_muR_", "fsr_Q2QG_muR_", "fsr_X2XG_muR_", "fsr_G2GG_cNS_", "fsr_G2QQ_cNS_", "fsr_Q2QG_cNS_", "fsr_X2XG_cNS_"}; // isr up
 
+  vector<string> VARIATION_SYS_btag = {"jes", "lf", "hf", "hfstats1", "hfstats2", "lfstats1", "lfstats2", "cferr1", "cferr2" };
+
   // VARIATION_SYS_T2 = vector_sum( VARIATION_SYS_T2_base, VARIATION_SYS_T2_extra1, VARIATION_SYS_T2_extra2, VARIATION_SYS_T2_extra3);
-  VARIATION_SYS_T2 = vector_sum( VARIATION_SYS_T2_base, VARIATION_SYS_T2_extra1 );
-  
+  VARIATION_SYS_T2 = vector_sum( VARIATION_SYS_T2_base, VARIATION_SYS_T2_extra1, VARIATION_SYS_btag );
+
   vector<string> JER_SYS_FOLDERS = {"eta0-193", "eta193-25", "eta25-3_p0-50", "eta25-3_p50-Inf", "eta3-5_p0-50", "eta3-5_p50-Inf"};
   vector<string> JER_SYS_U, JER_SYS_D;
   for(auto it : JER_SYS_FOLDERS){
@@ -66,6 +69,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
   bool BACKGROUND_QCD_CUT = false;
   if(RELEASE=="2017_v_15june2020_B") BACKGROUND_QCD_CUT = true;
   if(RELEASE=="2020_06_08_jerc_wjets_B") BACKGROUND_QCD_CUT = true;
+  if(RELEASE=="2020_novenber_B") BACKGROUND_QCD_CUT = true;
 
   if(RELEASE=="2017_v_15june2020_S" or RELEASE=="2017_v_15june2020_B"){ 
 /*
@@ -84,6 +88,12 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
     string ppath = "/scratch/pvolkov/samples/2020-06-08_jerc_wjets/" ;
            ppath = "/scratch2/gvorotni/13TeV/samples/2020-06-08_jerc_wjets/" ;
                 // "/scratch2/gvorotni/13TeV/samples/2020-06-08_jerc_wjets/" ;
+    PATH_PREFIX     = ppath + "tuples_merged/" ;
+    PATH_EXCLUDE    = ppath ;
+    PATH_SUSTEMATIC = ppath + "tuples_merged/Syst/" ;
+  }
+  else if(RELEASE=="2020_novenber_S" or RELEASE=="2020_novenber_B"){ 
+    string ppath = "/scratch/gvorotni/13TeV/samples/2020-10-18_roch_pdf/" ;
     PATH_PREFIX     = ppath + "tuples_merged/" ;
     PATH_EXCLUDE    = ppath ;
     PATH_SUSTEMATIC = ppath + "tuples_merged/Syst/" ;
@@ -137,7 +147,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
 
   //---------- FILL HISTS -------------------------------------------------------------------------------------------------------------------------
   string tree_name = "Vars";
-  // double rmin = 30, rmax = 180; 
+  // double rmin = 30, rmax = 180; BNN_sm_powheg_comphep
   double rmin = 0., rmax = 1.; 
   string vrule, wrule;
   TFile * out_file;
@@ -244,6 +254,10 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
       if( std::find(VARIATION_SYS_T2_extra3.begin(), VARIATION_SYS_T2_extra3.end(), systematic) != VARIATION_SYS_T2_extra3.end() ){
         mc_selection_up   = qcd_qut + "* " + systematic + "up / weight_gen * weight";
         mc_selection_down = qcd_qut + "* " + systematic + "dn / weight_gen * weight";
+      }
+      if( std::find(VARIATION_SYS_btag.begin(), VARIATION_SYS_btag.end(), systematic) != VARIATION_SYS_btag.end() ){
+        mc_selection_up   = qcd_qut + "* weight_btag_up_" + systematic;
+        mc_selection_down = qcd_qut + "* weight_btag_down_" + systematic;
       }
       
       std::string dy_fact_up, tt_fact_up, db_fact_up, sc_fact_up, tw_fact_up, wqq_fact_up;
