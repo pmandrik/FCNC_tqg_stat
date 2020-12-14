@@ -10,7 +10,7 @@ int histsPlot(string mode, TString inputFileName, float scaleFactor=0.){
   drawer.AddHistsFromFile( file, ".+", "(.+Down$)|(.+Up$)|(.+_alt)|(.+_weight_.+)|(.+_scale_.+)" );
   drawer.legend_width = 0.25;
 
-  sort(drawer.stack_hists.begin(), drawer.stack_hists.end(), [](const TH1D* a, const TH1D* b){return strcoll(a->GetName(),b->GetName()) < 0;} );
+  sort(drawer.stack_hists.begin(), drawer.stack_hists.end(), [](const TH1D* a, const TH1D* b){ return strcoll(a->GetName(),b->GetName()) < 0; } );
   for(auto hist : drawer.stack_hists)
     cout << hist->GetName() << endl;
 

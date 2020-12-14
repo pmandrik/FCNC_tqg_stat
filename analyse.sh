@@ -4,8 +4,8 @@
 
 nbins=10
 niters=500000
-release="PUPPI_JID_BTAG"  # "PUPPI_JID" "CHS_JID" "PUPPI_JID_BTAG" "PUPPI_JID_JECB" "PUPPI_JID_JECF"
-burn_in_frac=0.1
+release="2020_novenber" # "2017_v_15june2020" "PUPPI_JID" "CHS_JID" "PUPPI_JID_BTAG" "PUPPI_JID_JECB" "PUPPI_JID_JECF"
+burn_in_frac=0.1 
 
 mode=$1
 #  possible modes:
@@ -33,7 +33,7 @@ source /cvmfs/sft.cern.ch/lcg/contrib/gcc/4.9/x86_64-slc6-gcc49-opt/setup.sh
 export PATH=/cvmfs/sft.cern.ch/lcg/external/Python/2.7.3/x86_64-slc6-gcc48-opt/bin:$PATH
 export LD_LIBRARY_PATH=/cvmfs/sft.cern.ch/lcg/external/Python/2.7.3/x86_64-slc6-gcc48-opt/lib:$LD_LIBRARY_PATH
 
-srcdir=/afs/cern.ch/user/p/pmandrik/public/analysis/MSU_statistics_13TEV/theta_13tev_global
+srcdir=`pwd`/theta_13tev_global
 cfgdir=$(pwd)
 workdir=$(pwd)/$release
 
@@ -53,7 +53,7 @@ cd $workdir
 if [ "$mode" = "qcd" ] || [ "$mode" = "full" ]; then
   rm -rf "$workdir/qcd" && mkdir "$_" && cd "$_"
   echo "$myname, find QCD normalization ... "
-  root -q -b -l "$cfgdir/tree_to_hists.C(\"QCD\",\"$release\",\"hists_QCD.root\",$nbins)"
+  root -q -b -l "$cfgdir/tree_to_hists.C(\"QCD\",\""$release"_S\",\"hists_QCD.root\",$nbins)"
   root -q -b -l "$srcdir/histsPlot.cpp(\"QCD_before\", \"hists_QCD.root\")"
 
   python $cfgdir/create_card.py --fname="qcd_jul" --nbins=$nbins --input="hists_QCD.root" --mode="theta"
@@ -74,54 +74,109 @@ IFS=" " read QCD_low QCD_norm QCD_upp <<< "`cat $workdir/qcd/getQuantiles_temp.t
 echo "$myname, QCD norm factors = $QCD_low $QCD_norm $QCD_upp ..."
 
 #---------- 3. Create histogramms file
-if [ "$mode" = "hists" ] || [ "$mode" = "full" ]; then
-  mkdir -p "$workdir/hists" && cd "$_"
-  echo "$myname, create histogramms file ... "
-  if [ "$package" = "sm" ] || [ "$package" = "all" ]; then
-    root -q -b -l "$cfgdir/tree_to_hists.C(\"SM\",\"$release\",\"hists_SM.root\",$nbins, $QCD_norm)"
-    root -q -b -l "$srcdir/histsPlot.cpp(\"SM_before\",\"hists_SM.root\")"
-    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_SM.root\",\"SM_\")"
-    #python $srcdir/create_toy.py --input="hists_SM.root" --output="toy_hists_SM.root" --fname="simple"
-  fi
+make_hists_sm(){
+  nbins_=$1
+  QCD_norm_=$2
+  qcd_cut_=$3
 
-  if [ "$package" = "unmarg_sm" ] || [ "$package" = "all" ]; then
-    root -q -b -l "$cfgdir/tree_to_hists.C(\"SM_unmarg\",\"$release\",\"hists_SM_unmarg.root\",$nbins, $QCD_norm)"
-    root -q -b -l "$srcdir/histsCompUnmarg.cpp(\"hists_SM.root\", \"hists_SM_unmarg.root\",\"SM_unmarg_\")"
+  root -q -b -l "$cfgdir/tree_to_hists.C(\"SM\", \""$release"_S\", \"hists_SM.root\", $nbins_, $QCD_norm_, $qcd_cut_)"
+  root -q -b -l "$srcdir/histsPlot.cpp(\"SM_before\",\"hists_SM.root\")"
+  root -q -b -l "$srcdir/histsChecker.cpp(\"hists_SM.root\",\"SM_\", \"\", 1)"
+  root -q -b -l "$srcdir/histsChecker.cpp(\"hists_SM.root\",\"SMDIFF_\", \"diff\", 1)"
+  root -q -b -l "$srcdir/histsChecker.cpp(\"hists_SM.root\",\"SMDIFFPERCENT_\", \"diff percent\", 1)"
+
+  root -q -b -l "$cfgdir/tree_to_hists.C(\"SM\", \""$release"_B\", \"hists_BG.root\", $nbins_, $QCD_norm_, $qcd_cut_)"
+  root -q -b -l "$srcdir/histsPlot.cpp(\"BG_before\",\"hists_BG.root\")"
+  root -q -b -l "$srcdir/histsChecker.cpp(\"hists_BG.root\",\"BG_\", \"\", 1)"
+
+  root -l -b -q "$cfgdir/combine.C(\"hists_SM.root\", \"hists_BG.root\", \"hists_COMB.root\")"
+  return
+}
+
+if [ "$mode" = "hists" ] || [ "$mode" = "full" ]; then
+  echo "$myname, create histogramms file ... "
+  submode=$2
+  if [ "$submode" = "sm" ] || [ "$submode" = "sm_all" ] || [ "$submode" = "all" ]; then
+    mkdir -p "$workdir/hists" && cd "$_"
+    make_hists_sm $nbins $QCD_norm 0.70 
+  fi
+  if [ "$submode" = "sm_qcd" ] || [ "$submode" = "sm_all" ]  || [ "$submode" = "all" ]; then
+    for QCD_qut in "0.60" "0.65" "0.70" "0.75" "0.80"; do
+      mkdir -p "$workdir/hists/QCD_"$QCD_qut && cd "$_"
+      make_hists_sm $nbins $QCD_norm $QCD_qut &
+    done
+    wait
+  fi
+  if [ "$submode" = "sm_bins" ] || [ "$submode" = "sm_all" ]  || [ "$submode" = "all" ]; then
+    for nbins_alt in 8 9 10 11 12; do
+      mkdir -p "$workdir/hists/bins_"$nbins_alt && cd "$_"
+      make_hists_sm $nbins_alt $QCD_norm 0.70 &
+    done
+    wait
   fi
 
   if [ "$package" = "fcnc" ] || [ "$package" = "all" ]; then
-    root -q -b -l "$cfgdir/tree_to_hists.C(\"FCNC_tcg\",\"$release\",\"hists_FCNC_tcg.root\",$nbins, $QCD_norm)"
-    root -q -b -l "$cfgdir/tree_to_hists.C(\"FCNC_tug\",\"$release\",\"hists_FCNC_tug.root\",$nbins, $QCD_norm)"
+    root -q -b -l "$cfgdir/tree_to_hists.C(\"FCNC_tcg\",\""$release"_S\",\"hists_FCNC_tcg.root\",$nbins, $QCD_norm, 0.70)"
+    root -q -b -l "$cfgdir/tree_to_hists.C(\"FCNC_tug\",\""$release"_S\",\"hists_FCNC_tug.root\",$nbins, $QCD_norm, 0.70)"
 
     root -q -b -l "$srcdir/histsPlot.cpp(\"FCNC_tug\",\"hists_FCNC_tug.root\")"
-    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tug.root\",\"FCNC_tug_\")"
+    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tug.root\",\"FCNC_tug_\", 1)"
 
     root -q -b -l "$srcdir/histsPlot.cpp(\"FCNC_tcg\",\"hists_FCNC_tcg.root\")"
-    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tcg.root\",\"FCNC_tcg_\")"
+    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tcg.root\",\"FCNC_tcg_\", 1)"
   fi
 
   if [ "$mode" = "hists" ]; then exit; fi
 else echo "$myname, skip recreating histogramms files"; fi
 
 #---------- 4. Run SM analyse
+make_analyse_sm(){
+  input_hists=$1 # "$workdir/hists/hists_SM.root"
+  nbins_=$2
+
+  python $cfgdir/create_card.py --fname="sm_jul" --nbins=$nbins_ --niters=$niters --input=$input_hists --mode="latex theta mRoot"
+  $srcdir/run_theta.sh sm_jul_theta.cfg
+  
+  root -q -b -l "$srcdir/burnInStudy.cpp(\"sm_jul_theta.root\", \"sigma_t_ch\", \"BurnInStudySMTheta.png\")"
+  root -q -b -l "$srcdir/getPostHists.cpp(\"$input_hists\", \"sm_jul_mroot.txt\", \"sm_jul_theta.root\")"
+  root -q -b -l "$srcdir/histsPlot.cpp(\"SM_after\",\"postfit_hists/posthists.root\")"
+  root -q -b -l "$srcdir/histsChecker.cpp(\"$input_hists\",\"./postfit_hists/posthists.root\", \"SM_comp_\")"
+  
+  root -q -b -l "$srcdir/getTable.cpp(\"sm_jul_theta.root\", \"SM\", $burn_in_frac)"
+  pdflatex -interaction=batchmode getTable_SM.tex
+}
+
 if [ "$mode" = "sm" ] || [ "$mode" = "full" ]; then
   echo "$myname, SM ... "
-  mkdir -p "$workdir/sm" && cd "$_"
-
-  if [ "$package" = "theta" ] || [ "$package" = "all" ]; then
-    python $cfgdir/create_card.py --fname="sm_jul" --nbins=$nbins --niters=$niters --input="$workdir/hists/hists_SM.root" --mode="latex theta mRoot"
-    $srcdir/run_theta.sh sm_jul_theta.cfg
-    root -q -b -l "$srcdir/burnInStudy.cpp(\"sm_jul_theta.root\", \"sigma_t_ch\", \"sm_theta\")"
-    root -q -b -l "$srcdir/getTable.cpp(\"sm_jul_theta.root\", \"sm_theta\", $burn_in_frac)"
-    pdflatex -interaction=batchmode getTable_sm_theta.tex
-
-    root -q -b -l "$srcdir/getPostHists.cpp(\"$workdir/hists/hists_SM.root\", \"sm_jul_mroot.txt\", \"sm_jul_theta.root\")"
-    root -q -b -l "$srcdir/histsPlot.cpp(\"SM_after\",\"postfit_hists/posthists.root\")"
-    root -q -b -l "$srcdir/histsChecker.cpp(\"$workdir/hists/hists_SM.root\",\"./postfit_hists/posthists.root\", \"SM_comp_\")"
+  if [ "$package" = "def" ] || [ "$package" = "all" ]; then
+    mkdir -p "$workdir/sm" && cd "$_"
+    make_analyse_sm "$workdir/hists/hists_SM.root" 10
+    mv getTable_SM.pdf table_sm_theta_def.pdf
   fi
 
-  python $cfgdir/create_card.py --fname="sm_jul" --nbins=$nbins --niters=$niters --input="$workdir/hists/hists_SM.root" --mode="latex"
-  pdflatex -interaction=batchmode model_sm_jul.tex
+  if [ "$package" = "comb" ] || [ "$package" = "all" ]; then
+    mkdir -p "$workdir/sm" && cd "$_"
+    make_analyse_sm "$workdir/hists/hists_COMB.root" 20
+    mv getTable_SM.pdf table_sm_theta_comb.pdf
+  fi
+
+  if [ "$package" = "qcd" ] || [ "$package" = "all" ]; then
+    #for QCD_qut in "0.60" "0.65" "0.70" "0.75" "0.80"; do
+    #  mkdir -p "$workdir/sm/QCD_"$QCD_qut && cd "$_"
+    #  make_analyse_sm "$workdir/hists/QCD_"$QCD_qut"/hists_SM.root" 10
+    #  mv "$workdir/sm/QCD_"$QCD_qut"/sm_jul_theta.root" "$workdir/sm/QCD_"$QCD_qut".root"
+    #done
+    root -q -b -l "$srcdir/plotResultsForDifferentConditions.cpp(\"$workdir/sm/\", \"QCD_.+\.root\", \"sigma_t_ch\", \"t_ch_vs_QCD_cut\")"
+  fi
+  
+  if [ "$package" = "bins" ] || [ "$package" = "all" ]; then
+    #for nbins_alt in 8 9 10 11 12; do
+    #  mkdir -p "$workdir/sm/bins_"$nbins_alt && cd "$_"
+    #  make_analyse_sm "$workdir/hists/bins_"$nbins_alt"/hists_SM.root" $nbins_alt
+    #  mv "$workdir/sm/bins_"$nbins_alt"/sm_jul_theta.root" "$workdir/sm/bins_"$nbins_alt".root"
+    #done
+    root -q -b -l "$srcdir/plotResultsForDifferentConditions.cpp(\"$workdir/sm/\", \"bins_.+\.root\", \"sigma_t_ch\", \"t_ch_vs_nbins\")"
+  fi
 
   if [ "$mode" = "sm" ]; then exit; fi
 else echo "$myname, skip sm analyse"; fi
@@ -162,6 +217,20 @@ if [ "$mode" = "fcnc" ] || [ "$mode" = "full" ]; then
 
   if [ "$mode" = "sm" ]; then exit; fi
 else echo "$myname, skip sm analyse"; fi
+
+if [ "$mode" = "fcnc_var" ] || [ "$mode" = "full" ]; then
+  mkdir -p "$workdir/fcnc_var" && cd "$_"
+  python $cfgdir/create_card.py --fname="fcnc_tug_jul_expected_variation" --nbins=$nbins --niters=$niters --input="$workdir/hists/hists_FCNC_tug.root" --mode="latex theta"
+  
+  for name in fcnc_*cfg; do
+    echo $name
+    $srcdir/run_theta.sh $name
+
+    filename="${name%.*}"
+    root -q -b -l "$srcdir/getTable.cpp(\"$filename.root\", \"$filename\", $burn_in_frac)"
+    pdflatex -interaction=batchmode getTable_$filename.tex
+  done;
+fi
 
 
 

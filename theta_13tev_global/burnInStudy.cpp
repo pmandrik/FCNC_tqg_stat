@@ -9,7 +9,7 @@ using namespace mRoot;
   0%, 5%, 10%, 15%, 20%, 25% ...
 */
 
-double burnInStudy(string filename, string par_name, string postfix){
+double burnInStudy(string filename, string par_name, string output_name){
   TFile file( filename.c_str() );
 
   file.ls();
@@ -75,12 +75,15 @@ double burnInStudy(string filename, string par_name, string postfix){
     hist->SetFillColor(1700+counter);
     hist->SetStats(false);
 
-    leg->AddEntry(hist, (to_string(burn_fracs.at(i))).c_str(), "f");
+    std::string entry_string = to_string(burn_fracs.at(i)).substr(0,4);
+    entry_string += "     -#sigma,mean,+#sigma = " + to_string(l).substr(0,5) + " " + to_string(c).substr(0,5) + " " + to_string(u).substr(0,5);
+  
+    leg->AddEntry(hist, entry_string.c_str(), "f");
     counter++;
   }
 
   leg->Draw();
-  canv_hists->Print( ("burnInStudy_" + postfix + ".png").c_str() );
+  canv_hists->Print( output_name.c_str() );
   cout << "done!" << endl;
   return 0;
 }

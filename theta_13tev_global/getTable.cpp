@@ -166,7 +166,15 @@ double getTable(string filename, string postfix, double def_bfrac){
   }
   out_string += " \\hline \\end{tabular} \n \\end{center} \n";
 
-  // COVARIANCE TABLE ===================================================================  
+  // INCLUDE BURN IN STUDY IMAGE ===================================================================
+  out_string += "\n \\newpage \n";
+  out_string += "\n \\textbf{BURN IN STUDY} \\\\ \n";
+  out_string += " \\includegraphics[width=0.9\\linewidth]{BurnInStudySMTheta.png} ";
+
+  // COVARIANCE TABLE =================================================================== 
+  out_string += "\n \\newpage \n"; 
+  mRoot::msg("add COVARIANCE TABLE ...");
+  out_string += "\n \\textbf{COVARIANCE TABLE} \\\\ \n";
   /*
   out_string += "\\begin{center} \n \\begin{tabular}{|c|";
   for(auto par : parameters) out_string += " c |";
@@ -190,13 +198,18 @@ double getTable(string filename, string postfix, double def_bfrac){
   for(int x = 0; x < parameters.size(); x++){
     for(int y = 0; y < parameters.size(); y++){
       double variance = parameters.at(y)->GetCovariance( parameters.at(x) );
+      if(x == y) mRoot::msg( x, y, variance );
       hist_cov->Fill(x, y, variance);
     }
   }
 
-  auto canv = mRoot::plotCorrelationHist( hist_cov, false );
-  canv->Print(("Cov_" + postfix + ".png").c_str());
+  auto canv = mRoot::plotCorrelationHist( hist_cov, false, 2 );
+  string cov_hist_out_name = "Cov" + postfix + ".png";
+  canv->Print( cov_hist_out_name.c_str() );
+  out_string += " \\includegraphics[width=0.7\\linewidth]{" + cov_hist_out_name + "} ";
 
+  mRoot::msg("add CORRELATION TABLE ...");
+  out_string += "\n \\\\ \\textbf{CORRELATION TABLE} \\\\ \n";
   TH2D * hist_cor = new TH2D("Correlation", "Correlation", parameters.size(), 0, parameters.size(), parameters.size(), 0, parameters.size());
   for(int i=1; i <= hist_cor->GetNbinsX(); i++) hist_cor->GetXaxis()->SetBinLabel(i, parameters.at(i-1)->name.c_str() );
   for(int i=1; i <= hist_cor->GetNbinsX(); i++) hist_cor->GetYaxis()->SetBinLabel(i, parameters.at(i-1)->name.c_str() );
@@ -211,11 +224,39 @@ double getTable(string filename, string postfix, double def_bfrac){
     }
   }
 
-  canv = mRoot::plotCorrelationHist( hist_cor );
-  canv->Print(("Cor_" + postfix + ".png").c_str());
+  canv = mRoot::plotCorrelationHist( hist_cor, 2 );
+  string cor_hist_out_name = "Cor" + postfix + ".png";
+  canv->Print(cor_hist_out_name.c_str());
+  out_string += " \\includegraphics[width=0.7\\linewidth]{" + cor_hist_out_name + "} ";
+
+  // ALL HISTOGRAMMS =================================================================== 
+  out_string += "\n \\newpage \n";
+  out_string += "\n \\textbf{INPUT HISTOGRAMMS} \\\\ \n";
+  TSystemDirectory dir("../hists/", "../hists/"); 
+  TList *files = dir.GetListOfFiles();
+  if (files) { 
+    TSystemFile *file; 
+    TString fname; 
+    TIter next(files); 
+    while ((file=(TSystemFile*)next())) { 
+      fname = file->GetName(); 
+      string name = fname.Data();
+      if( name.find(".png") == string::npos) continue;
+      if( name.find( postfix ) == string::npos) continue;
+      cout << "!!!!!!!!!!!!!!!!!!!!1" << name << endl;
+      name = " \\includegraphics[width=0.7\\linewidth]{../hists/" + name + "} \\\\ \n ";
+      ReplaceStringInPlace( name, string("_"), string("@@@@@@@@"));
+      out_string += name;
+    } 
+  }
+
+  //for(int i = 0; i < channels_names.size(); i++){
+  //  out_string += " \\includegraphics[width=0.7\\linewidth]{ ../hists/" + channel_prefix + channels_names.at(i) + "} ";
+  //}
 
   // ALL MCMC CHAINS TABLE ===================================================================
   out_string += "\n \\newpage \n";
+  out_string += "\n \\textbf{MCMC OUPUT CHAINS} \\\\ \n";
   int new_line = 0;
   chains_path = ("chains_" + postfix);
   ReplaceStringInPlace(chains_path, string("_"), string("X"));
@@ -240,6 +281,7 @@ double getTable(string filename, string postfix, double def_bfrac){
   out_string += " \n \\end{document} \n";
 
   ReplaceStringInPlace( out_string, string("_"), string("\\_"));
+  ReplaceStringInPlace( out_string, string("@@@@@@@@"), string("_"));
 
   ofstream out( ("getTable_" + postfix + ".tex").c_str() );
   out << out_string << endl;

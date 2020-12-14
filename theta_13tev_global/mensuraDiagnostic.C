@@ -51,21 +51,21 @@ file_info * check_file(TString file_name, string r, string f){
 
   string prefix = r + "@" + f + "@";
 
-  vector<string> bnns_names = { "BNN_SM_new", "BNN_SM_pw", "BNN_SM_ch", "BNN_SM_mix", "BNN_SM_mix2" };
+  vector<string> bnns_names = { "weight" };
   vector<float*> bnns_vars = list_compr<float*>([prefix](string s){ return new float();}, bnns_names);
   vector<TH1D*> bnns_hists = list_compr<TH1D*>([prefix](string s){ return new TH1D( (prefix+s).c_str(), (prefix+s).c_str(), 50,0,1);}, bnns_names);
   vector<TH1D*> bnns_hists_w = list_compr<TH1D*>([prefix](string s){ return new TH1D((prefix+s + "_w").c_str(), (prefix+s + "_w").c_str(), 50,0,1);}, bnns_names);
 
-  vector<string> weight_names = { "weight_xsec", "weight_btag", "weight_pu", "weight_trig", "weight_pttop" };
+  vector<string> weight_names = { "weight_xsec", "weight_btag", "weight_pu", "weight_trig", "weight_pttop", "weight_gen" };
   vector<float*> weight_vars = list_compr<float*>([prefix](string s){ return new float();}, weight_names);
 
   vector<TH1D*> weight_hists = list_compr<TH1D*>([prefix, tree](string s){ return new TH1D( (prefix+s).c_str(), (prefix+s).c_str(), 100, tree->GetMinimum(s.c_str())-0.1, tree->GetMaximum(s.c_str())+0.1);}, weight_names);
 
-  tree->SetBranchAddress("weight_norm", &weight_norm);
+  tree->SetBranchAddress("weight", &weight_norm);
   vector<bool> bnns_sets = list_compr<bool>([tree, prefix](string s, float* var){ return (tree->SetBranchAddress( s.c_str(),var) == 0);}, bnns_names, bnns_vars);
   vector<bool> weight_sets = list_compr<bool>([tree, prefix](string s, float* var){ return (tree->SetBranchAddress( s.c_str(),var) == 0);}, weight_names, weight_vars);
 
-  TH1D* weight_hist = new TH1D( (prefix+"weight_norm").c_str(), (prefix+"weight_norm").c_str(), 100, tree->GetMinimum("weight_norm")-0.1, tree->GetMaximum("weight_norm")+0.1);
+  TH1D* weight_hist = new TH1D( (prefix+"weight").c_str(), (prefix+"weight").c_str(), 100, tree->GetMinimum("weight")-0.1, tree->GetMaximum("weight")+0.1);
 
   long long int nevents = tree->GetEntries();
   for (long long int  i=0; i<nevents; i++) {
@@ -140,9 +140,9 @@ struct latex_table{
 
 void mensuraDiagnostic(){
   //TString PREPATH = "/afs/cern.ch/work/g/gvorotni/public/samples/13TeV/";
-  TString PREPATH = "/scratch/gvorotni/13TeV/samples/";
+  TString PREPATH = "/scratch/common/samples/";
   //vector<TString> RELEASES = {"17-04-27_new_syst", "17-10-31_PUPPI", "17-10-21_CHS"};
-  vector<TString> RELEASES = {"17-04-27_new_syst", "17-10-31_PUPPI", "17-12-01_DeepCSV"};
+  vector<TString> RELEASES = { "2020-05-01_pujetid", "2020-03-17_bugfix" };
   TString POSTPATH = "/tuples_merged/Central";
 
   vector<file_info*> fis;
