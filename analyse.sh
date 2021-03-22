@@ -4,7 +4,7 @@
 
 nbins=10
 niters=500000
-release="2020_novenber_CompHEP" # "2020_novenber_NoIsoCut"
+release="2021_deep" # "2020_novenber_NoIsoCut"
 burn_in_frac=0.1 
 
 mode=$1
@@ -48,6 +48,30 @@ if [ "$mode" = "start" ] || [ "$mode" = "full" ]; then
 else echo "$myname, skip recreating work directory $workdir"; fi
 
 cd $workdir
+
+#---------- SYS IMPACT
+if [ "$mode" = "sys_impact" ] || [ "$mode" = "full" ]; then
+  package="sm"
+  mkdir -p "$workdir/sys_check/" && cd "$_"
+  if [ "$package" = "sm" ]; then
+    mkdir -p "$workdir/sys_check/$package" && cd "$_"
+    python $cfgdir/create_card.py --fname="sys_impact" --nbins=$nbins --niters=$niters --input="$workdir/hists/hists_SM.root" --mode="theta"
+    for f in expected_*_theta.cfg; do
+      cd $workdir/sys_check/$package
+      if [[ $f =~ expected_sm_jul_(.*)_theta.cfg ]]; then  
+        sys_name=${BASH_REMATCH[1]} 
+        mkdir -p "$workdir/sys_check/$package/$sys_name" && cd "$_"
+        cp ../*$sys_name*.cfg .
+        #cp ../*$sys_name*.tex .
+        $srcdir/run_theta.sh $f
+        #root -q -b -l "$srcdir/getTable.cpp(\"expected_"$sys_name"_theta.root\", \"expected_theta\", $burn_in_frac)"
+        #pdflatex -interaction=batchmode getTable_expected_theta.tex
+        #pdflatex -interaction=batchmode model_expected_$sys_name.tex
+      fi
+    done
+  fi
+  exit
+fi
 
 #---------- 2. Find QCD normalization
 if [ "$mode" = "qcd" ] || [ "$mode" = "full" ]; then
@@ -115,14 +139,19 @@ if [ "$mode" = "hists" ] || [ "$mode" = "full" ]; then
   fi
 
   if [ "$package" = "fcnc" ] || [ "$package" = "all" ]; then
-    root -q -b -l "$cfgdir/tree_to_hists.C(\"FCNC_tcg\",\""$release" SIG\",\"hists_FCNC_tcg.root\",$nbins, $QCD_norm, 0.70)"
-    root -q -b -l "$cfgdir/tree_to_hists.C(\"FCNC_tug\",\""$release" SIG\",\"hists_FCNC_tug.root\",$nbins, $QCD_norm, 0.70)"
+    mkdir -p "$workdir/hists_fcnc" && cd "$_"
+    root -q -b -l "$cfgdir/tree_to_hists.C(\"FCNC_tcg\", \""$release" SIG\", \"hists_FCNC_tcg.root\", $nbins, $QCD_norm, 0.70)"
+    root -q -b -l "$cfgdir/tree_to_hists.C(\"FCNC_tug\", \""$release" SIG\", \"hists_FCNC_tug.root\", $nbins, $QCD_norm, 0.70)"
 
     root -q -b -l "$srcdir/histsPlot.cpp(\"FCNC_tug\",\"hists_FCNC_tug.root\")"
-    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tug.root\",\"FCNC_tug_\", 1)"
+    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tug.root\",\"FCNC_tug_\", \"\", 1)"
+    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tug.root\",\"FCNC_tug_\", \"diff\", 1)"
+    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tug.root\",\"FCNC_tug_\", \"diff percent\", 1)"
 
     root -q -b -l "$srcdir/histsPlot.cpp(\"FCNC_tcg\",\"hists_FCNC_tcg.root\")"
-    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tcg.root\",\"FCNC_tcg_\", 1)"
+    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tcg.root\",\"FCNC_tcg_\", \"\", 1)"
+    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tug.root\",\"FCNC_tug_\", \"diff\", 1)"
+    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tug.root\",\"FCNC_tug_\", \"diff percent\", 1)"
   fi
 
   if [ "$mode" = "hists" ]; then exit; fi
@@ -185,34 +214,19 @@ set -x
 if [ "$mode" = "fcnc" ] || [ "$mode" = "full" ]; then
   echo "$myname, FCNC ... "
   mkdir -p "$workdir/fcnc" && cd "$_"
-    python $cfgdir/create_card.py --fname="fcnc_tug_jul" --nbins=$nbins --niters=$niters --input="$workdir/hists/hists_FCNC_tug.root" --mode="latex theta"
+    python $cfgdir/create_card.py --fname="fcnc_tug_jul" --nbins=$nbins --niters=$niters --input="$workdir/hists_fcnc/hists_FCNC_tug.root" --mode="latex theta"
     $srcdir/run_theta.sh fcnc_tug_jul_theta.cfg
-    root -q -b -l "$srcdir/burnInStudy.cpp(\"fcnc_tug_jul_theta.root\", \"KU\", \"fcnc_tug_theta\")"
-    root -q -b -l "$srcdir/getTable.cpp(\"fcnc_tug_jul_theta.root\", \"fcnc_tug_theta\", $burn_in_frac)"
-    pdflatex -interaction=batchmode getTable_fcnc_tug_theta.tex
+    root -q -b -l "$srcdir/burnInStudy.cpp(\"fcnc_tug_jul_theta.root\", \"KU\", \"BurnInStudyKUTheta.png\")"
+    root -q -b -l "$srcdir/getTable.cpp(\"fcnc_tug_jul_theta.root\", \"KU\", $burn_in_frac)"
+    pdflatex -interaction=batchmode getTable_KU.tex
+    mv getTable_KU.pdf table_KU_def.pdf
 
-    python $cfgdir/create_card.py --fname="fcnc_tcg_jul" --nbins=$nbins --niters=$niters --input="$workdir/hists/hists_FCNC_tcg.root" --mode="latex theta"
+    python $cfgdir/create_card.py --fname="fcnc_tcg_jul" --nbins=$nbins --niters=$niters --input="$workdir/hists_fcnc/hists_FCNC_tcg.root" --mode="latex theta"
     $srcdir/run_theta.sh fcnc_tcg_jul_theta.cfg
-    root -q -b -l "$srcdir/burnInStudy.cpp(\"fcnc_tcg_jul_theta.root\", \"KC\", \"fcnc_tcg_theta\")"
-    root -q -b -l "$srcdir/getTable.cpp(\"fcnc_tcg_jul_theta.root\", \"fcnc_tcg_theta\", $burn_in_frac)"
-    pdflatex -interaction=batchmode getTable_fcnc_tcg_theta.tex
-
-    python $cfgdir/create_card.py --fname="fcnc_tug_jul_expected" --nbins=$nbins --niters=$niters --input="$workdir/hists/hists_FCNC_tug.root" --mode="latex theta"
-    $srcdir/run_theta.sh fcnc_tug_jul_expected_theta.cfg
-    root -q -b -l "$srcdir/burnInStudy.cpp(\"fcnc_tug_jul_expected_theta.root\", \"KU\", \"fcnc_tug_theta\")"
-    root -q -b -l "$srcdir/getTable.cpp(\"fcnc_tug_jul_expected_theta.root\", \"fcnc_tug_expected_theta\", $burn_in_frac)"
-    pdflatex -interaction=batchmode getTable_fcnc_tug_expected_theta.tex
-
-    python $cfgdir/create_card.py --fname="fcnc_tcg_jul_expected" --nbins=$nbins --niters=$niters --input="$workdir/hists/hists_FCNC_tcg.root" --mode="latex theta"
-    $srcdir/run_theta.sh fcnc_tcg_jul_expected_theta.cfg
-    root -q -b -l "$srcdir/burnInStudy.cpp(\"fcnc_tcg_jul_expected_theta.root\", \"KC\", \"fcnc_tcg_theta\")"
-    root -q -b -l "$srcdir/getTable.cpp(\"fcnc_tcg_jul_expected_theta.root\", \"fcnc_tcg_expected_theta\", $burn_in_frac)"
-    pdflatex -interaction=batchmode getTable_fcnc_tcg_expected_theta.tex
-
-  pdflatex -interaction=batchmode model_fcnc_tcg_jul.tex
-  pdflatex -interaction=batchmode model_fcnc_tug_jul.tex
-  pdflatex -interaction=batchmode model_fcnc_tcg_jul_expected.tex
-  pdflatex -interaction=batchmode model_fcnc_tug_jul_expected.tex
+    root -q -b -l "$srcdir/burnInStudy.cpp(\"fcnc_tcg_jul_theta.root\", \"KC\", \"BurnInStudyKCTheta.png\")"
+    root -q -b -l "$srcdir/getTable.cpp(\"fcnc_tcg_jul_theta.root\", \"KC\", $burn_in_frac)"
+    pdflatex -interaction=batchmode getTable_KC.tex
+    mv getTable_KC.pdf table_KC_def.pdf
 
   if [ "$mode" = "sm" ]; then exit; fi
 else echo "$myname, skip sm analyse"; fi

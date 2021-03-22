@@ -51,7 +51,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
   VARIATION_SYS_T2 = vector_sum( VARIATION_SYS_T2_base, VARIATION_SYS_T2_extra1, VARIATION_SYS_btag );
 
   // SYSTEMATIC IN THE DIFFERENT FILES
-  vector<string> VARIATION_SYS_T1 = { "UnclMET", "JER", "JEC" };
+  vector<string> VARIATION_SYS_T1 = { "UnclMET", "MER", "JER", "JEC" };
   vector<string> JER_SYS_FOLDERS = { "eta0-193", "eta193-25", "eta25-3_p0-50", "eta25-3_p50-Inf", "eta3-5_p0-50", "eta3-5_p50-Inf" };
   vector<string> JER_SYS_U, JER_SYS_D   ;
   for(auto it : JER_SYS_FOLDERS){
@@ -80,17 +80,26 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
     PATH_PREFIX     = ppath + "tuples_merged/" ;
     PATH_EXCLUDE    = ppath ;
     PATH_SUSTEMATIC = ppath + "tuples_merged/Syst/" ;
+    
     use_rel_iso_cut = true;
   }
-  if( RELEASE=="2020_novenber_NoIsoCut" ){ 
+  else if( RELEASE=="2020_novenber_NoIsoCut" or RELEASE == "2021_jan_NoIsoCut" ){ 
     string ppath = "/scratch2/gvorotni/13TeV/samples/2020-10-18_roch_pdf/" ;
     PATH_PREFIX     = ppath + "tuples_merged/" ;
     PATH_EXCLUDE    = ppath ;
     PATH_SUSTEMATIC = ppath + "tuples_merged/Syst/" ;
     use_rel_iso_cut = false;
   }
-  if( RELEASE=="2020_novenber_CompHEP" ){ 
+  else if( RELEASE=="2020_novenber_CompHEP" ){ 
     string ppath = "/scratch2/gvorotni/13TeV/samples/2020-10-18_roch_pdf/" ;
+    PATH_PREFIX     = ppath + "tuples_merged/" ;
+    PATH_EXCLUDE    = ppath ;
+    PATH_SUSTEMATIC = ppath + "tuples_merged/Syst/" ;
+    use_rel_iso_cut = false;
+    use_comphep     = true;
+  }
+  else if( RELEASE=="2021_deep" ){ 
+    string ppath = "/scratch2/pvolkov/samples/" ;
     PATH_PREFIX     = ppath + "tuples_merged/" ;
     PATH_EXCLUDE    = ppath ;
     PATH_SUSTEMATIC = ppath + "tuples_merged/Syst/" ;
@@ -154,7 +163,8 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
 
   if(MODE == "QCD"){
     out_file = new TFile(OUTPUT_FILE_NAME.c_str(), "RECREATE");
-    vrule    = "BNN_qcd_tchan_5vars"; // "BNN_qcd"; 
+    // vrule    = "BNN_qcd_tchan_5vars"; // "BNN_qcd"; 
+    vrule    = "BNN_qcd_tchan_5vars_2"; // "BNN_qcd"; 
 
     PREFIX_NTUPLES = PATH_PREFIX + CENTRAL_FOLDER +"/";
     EventsExcluder * excl = nullptr;
@@ -181,8 +191,8 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
     out_file = new TFile(OUTPUT_FILE_NAME.c_str(), "RECREATE");
 
     // BNN_sm_pow_comph и BNN_qcd_tchan_2 BNN_qcd_tchan_5vars
-    string qcd_qut   = "(BNN_qcd_tchan_5vars > " + std::to_string( QCD_qut ) + ")";
-    if( BACKGROUND_QCD_CUT ) qcd_qut = "(BNN_qcd_tchan_5vars > 0.2) * (BNN_qcd_tchan_5vars < " + std::to_string( QCD_qut ) + ")";
+    string qcd_qut   = "(BNN_qcd_tchan_5vars_2 > " + std::to_string( QCD_qut ) + ")";
+    if( BACKGROUND_QCD_CUT ) qcd_qut = "(BNN_qcd_tchan_5vars_2 > 0.2) * (BNN_qcd_tchan_5vars_2 < " + std::to_string( QCD_qut ) + ")";
 
     string data_selection   = qcd_qut + " * (N_BJ==1) * (RelIso_Lep < 0.04)";
     string qcd_selection    = qcd_qut + " * weight * " + to_string( QCD_norm );
@@ -200,8 +210,9 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
     // SM < 
     if(MODE == "SM"){
       vrule = "BNN_sm_powheg_comphep_2"; // "BNN_sm"
-      if( BACKGROUND_QCD_CUT ) vrule = "BNN_qcd_tchan_5vars";
-      excl = new EventsExcluder( "/afs/cern.ch/work/p/pvolkov/public/Networks/13Tev/nov20/sm_pow_comph_2/bnn_sm_pow_comph_qcd_5vars_trainEvents.txt" );
+      if( BACKGROUND_QCD_CUT ) vrule = "DNN_sm_pow_comph_Wjets"; // "BNN_qcd_tchan_5vars"; DNN_sm_pow_comph_Wjets, BNN_sm_powheg_comphep_wjets
+      // excl = new EventsExcluder( "/afs/cern.ch/work/p/pvolkov/public/Networks/13Tev/nov20/sm_pow_comph_2/bnn_sm_pow_comph_qcd_5vars_trainEvents.txt" );
+      excl = new EventsExcluder( "/afs/cern.ch/work/p/pvolkov/public/Networks/13Tev/nov20/qcd_tchan_5vars/qcd_tchan_5vars_trainEvents.txt" );
     }
     //vrule = "Eta_LJ";
     //rmin = -5, rmax = 5; 
@@ -209,14 +220,12 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
 
     // FCNC <
     if(MODE == "FCNC_tcg"){
-      vrule = "BNN_tcg";
-      vrule = "BNN_tcg_NBJ_2";
-      //excl = new EventsExcluder( PATH_EXCLUDE + "fcnc_tcg/bnn_tcg_trainEvents.txt" );
+      vrule = "BNN_tcg_2";
+      excl = new EventsExcluder( "/afs/cern.ch/work/p/pvolkov/public/Networks/13Tev/nov20/fcnc_tcg/bnn_tcg_qcd_5vars_sm_powheg_compheg_2_trainEvents.txt" );
     }
     if(MODE == "FCNC_tug"){
-      vrule = "BNN_tug";
-      vrule = "BNN_tug_NBJ_2";
-      //excl = new EventsExcluder( PATH_EXCLUDE + "fcnc_tug/bnn_tug_trainEvents.txt" );
+      vrule = "BNN_tug_2";
+      excl = new EventsExcluder( "/afs/cern.ch/work/p/pvolkov/public/Networks/13Tev/nov20/fcnc_tug/bnn_tug_qcd_5vars_sm_powheg_compheg_2_trainEvents.txt" );
     }
     // >
     if(excl != nullptr) excl->Print();
@@ -257,13 +266,15 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
       if( std::find(VARIATION_SYS_T2_extra1.begin(), VARIATION_SYS_T2_extra1.end(), systematic) != VARIATION_SYS_T2_extra1.end() ){
         mc_selection_up   = mc_selection + "* weight_" + systematic + "Up / weight_gen";
         mc_selection_down = mc_selection + "* weight_" + systematic + "Down / weight_gen";
-        systematic_ = systematic + "_red";
+        systematic_ = systematic;
       }
+      // {"_G2GG_muR_", "_G2QQ_muR_", "_Q2QG_muR_", "_X2XG_muR_", "_G2GG_cNS_", "_G2QQ_cNS_", "_Q2QG_cNS_", "_X2XG_cNS_"};
       if( std::find(VARIATION_SYS_T2_extra2.begin(), VARIATION_SYS_T2_extra2.end(), systematic) != VARIATION_SYS_T2_extra2.end() ){
         mc_selection_up   = mc_selection + "/ weight * isr" + systematic + "dn / weight_gen * weight";
         mc_selection_down = mc_selection + "/ weight * isr" + systematic + "up / weight_gen * weight";
         systematic_ = "isr" + systematic;
       }
+      // {"fsr_G2GG_muR_", "fsr_G2QQ_muR_", "fsr_Q2QG_muR_", "fsr_X2XG_muR_", "fsr_G2GG_cNS_", "fsr_G2QQ_cNS_", "fsr_Q2QG_cNS_", "fsr_X2XG_cNS_"};
       if( std::find(VARIATION_SYS_T2_extra3.begin(), VARIATION_SYS_T2_extra3.end(), systematic) != VARIATION_SYS_T2_extra3.end() ){
         mc_selection_up   = mc_selection + "/ weight * " + systematic + "up / weight_gen * weight";
         mc_selection_down = mc_selection + "/ weight * " + systematic + "dn / weight_gen * weight";
@@ -297,6 +308,9 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
         get_renorm_factor(PREFIX_NTUPLES, FILES_WJ, tree_name, sel_centr+SELECTION_Wother, mc_selection_up+SELECTION_Wother, mc_selection_down+SELECTION_Wother, wother_fact_up, wother_fact_dn);
         get_renorm_factor(PREFIX_NTUPLES, FILES_WJ, tree_name, sel_centr+SELECTION_Wc, mc_selection_up+SELECTION_Wc, mc_selection_down+SELECTION_Wc, wc_fact_up, wc_fact_dn);
         get_renorm_factor(PREFIX_NTUPLES, FILES_TC, tree_name, sel_centr, mc_selection_up, mc_selection_down, tc_fact_up, tc_fact_dn);
+
+        // get_renorm_factor(PREFIX_NTUPLES, FILES_TC, tree_name, sel_centr, mc_selection_up, mc_selection_down, tug_fact_up, tug_fact_dn);
+        // get_renorm_factor(PREFIX_NTUPLES, FILES_TC, tree_name, sel_centr, mc_selection_up, mc_selection_down, tcg_fact_up, tcg_fact_dn);
         if(MODE == "FCNC_tug") get_renorm_factor(PREFIX_NTUPLES, FILES_FCNC_TUG, tree_name, sel_centr, mc_selection_up, mc_selection_down, tug_fact_up, tug_fact_dn);
         if(MODE == "FCNC_tcg") get_renorm_factor(PREFIX_NTUPLES, FILES_FCNC_TCG, tree_name, sel_centr, mc_selection_up, mc_selection_down, tcg_fact_up, tcg_fact_dn);
       } 
@@ -314,7 +328,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
       fill_hist_sys("t_ch_"+systematic_,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC, tree_name, vrule, tc_fact_up+mc_selection_up, tc_fact_dn+mc_selection_down, excl);
       //fill_hist_sys("t_alt_"+systematic_, NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC, tree_name, vrule, mc_selection_up, mc_selection_down, excl);
       if(MODE == "FCNC_tug") fill_hist_sys("fcnc_tug_"+systematic_,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_FCNC_TUG,  tree_name, vrule, tug_fact_up + mc_selection_up, tug_fact_dn + mc_selection_down,        excl);
-      if(MODE == "FCNC_tcg") fill_hist_sys("fcnc_tcg_"+systematic_,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_FCNC_TCG,  tree_name, vrule, tcg_fact_dn + mc_selection_up, tcg_fact_dn + mc_selection_down,        excl);
+      if(MODE == "FCNC_tcg") fill_hist_sys("fcnc_tcg_"+systematic_,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_FCNC_TCG,  tree_name, vrule, tcg_fact_up + mc_selection_up, tcg_fact_dn + mc_selection_down,        excl);
     }
 
 
@@ -403,6 +417,24 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
         if(MODE == "FCNC_tcg") fill_hist("fcnc_tcg_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_FCNC_TCG,  tree_name, vrule, mc_selection + extra_select, excl);
       }
     }
+
+    // tW-chan: hdamp и isr/fsr (в tW нет PS weights, но не знаю, используешь ли ты эти семплы сейчас)
+    // ttbar: hdamp, tune, colourFlip, erdOn, qcd_based и отдельные isr/fsr (как альтернатива PSweights).
+    fill_hist("tW_ch_hdampUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_hdamp_up.root", "tW-channel-top_hdamp_up.root"},      tree_name, vrule, mc_selection_TW,        excl);
+    fill_hist("tW_ch_hdampDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_hdamp_down.root", "tW-channel-top_hdamp_down.root"},  tree_name, vrule, mc_selection_TW,        excl);
+    fill_hist("tW_ch_IsrUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_isr_up.root", "tW-channel-top_isr_up.root"},      tree_name, vrule, mc_selection_TW,        excl);
+    fill_hist("tW_ch_IsrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_isr_down.root", "tW-channel-top_isr_down.root"},  tree_name, vrule, mc_selection_TW,        excl);
+    fill_hist("tW_ch_FsrUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_fsr_up.root", "tW-channel-top_fsr_up.root"},      tree_name, vrule, mc_selection_TW,        excl);
+    fill_hist("tW_ch_FsrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_fsr_down.root", "tW-channel-top_fsr_down.root"},  tree_name, vrule, mc_selection_TW,        excl);
+
+    fill_hist("ttbar_hdampUp",    NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_hdamp_up.root"},    tree_name, vrule, mc_selection,        excl);
+    fill_hist("ttbar_hdampDown",  NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_hdamp_down.root"},  tree_name, vrule, mc_selection,        excl);
+    fill_hist("ttbar_UETuneUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_tune_up.root"},     tree_name, vrule, mc_selection,        excl);
+    fill_hist("ttbar_UETuneDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_tune_down.root"},   tree_name, vrule, mc_selection,        excl);
+    fill_hist("ttbar_IsrUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_isr_up.root"},    tree_name, vrule, mc_selection,        excl);
+    fill_hist("ttbar_IsrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_isr_down.root"},  tree_name, vrule, mc_selection,        excl);
+    fill_hist("ttbar_FsrUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_fsr_up.root"},    tree_name, vrule, mc_selection,        excl);
+    fill_hist("ttbar_FsrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_fsr_down.root"},  tree_name, vrule, mc_selection,        excl);
     out_file->Close();
   }
   else cout << __FILE__ " : unknow mode " << MODE << endl;

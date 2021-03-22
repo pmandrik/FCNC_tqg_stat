@@ -161,15 +161,24 @@ double getTable(string filename, string postfix, double def_bfrac){
     double up2 = get_qv(hist, 0.98 );
 
     cout << hist->GetTitle() << " " << up1 << " " << up2 << endl;
-    out_string += string(hist->GetTitle()) + " & " + get_string(up1, 3) + " & " + get_string(up2, 3) + " \\\\ \n ";
-    dbase.SetItem( string(hist->GetTitle()) + "_" + postfix, get_string(up1, 6) + " " + get_string(up2, 6),  "getTable("+filename+"," + postfix +")");
+    out_string += string(hist->GetTitle()) + " process normalisation & " + get_string(up1, 3) + " & " + get_string(up2, 3) + " \\\\ \n ";
+
+    // https://arxiv.org/pdf/0810.3889.pdf
+    double Cq = 1.1964;
+    double Kappa_q = 0.03;
+    double Br_1 = Cq * up1 * Kappa_q * Kappa_q;
+    double Br_2 = Cq * up2 * Kappa_q * Kappa_q;
+    out_string += string(hist->GetTitle()) + " branching" + " & " + get_string(Br_1, 3) + " & " + get_string(Br_2, 3) + " \\\\ \n ";
   }
+  out_string += " 7+8 TeV branching KU obs (exp) & 2.0 (2.8) \\times 10^{-5} & \\\\ \n";
+  out_string += " 7+8 TeV branching KC obs (exp) & 4.1 (2.8) \\times 10^{-4} & \\\\ \n";
   out_string += " \\hline \\end{tabular} \n \\end{center} \n";
 
   // INCLUDE BURN IN STUDY IMAGE ===================================================================
   out_string += "\n \\newpage \n";
   out_string += "\n \\textbf{BURN IN STUDY} \\\\ \n";
-  out_string += " \\includegraphics[width=0.9\\linewidth]{BurnInStudySMTheta.png} ";
+  out_string += " \\includegraphics[width=0.9\\linewidth]{BurnInStudy" + postfix + "Theta.png} ";
+  cout << "BurnInStudy" + postfix + "Theta.png " << endl;
 
   // COVARIANCE TABLE =================================================================== 
   out_string += "\n \\newpage \n"; 
@@ -232,7 +241,9 @@ double getTable(string filename, string postfix, double def_bfrac){
   // ALL HISTOGRAMMS =================================================================== 
   out_string += "\n \\newpage \n";
   out_string += "\n \\textbf{INPUT HISTOGRAMMS} \\\\ \n";
-  TSystemDirectory dir("../hists/", "../hists/"); 
+  string hists_path = "../hists/";
+  if(postfix == "KU" or postfix == "KC") hists_path = "../hists_fcnc/";
+  TSystemDirectory dir(hists_path.c_str(), hists_path.c_str()); 
   TList *files = dir.GetListOfFiles();
   if (files) { 
     TSystemFile *file; 
@@ -242,9 +253,12 @@ double getTable(string filename, string postfix, double def_bfrac){
       fname = file->GetName(); 
       string name = fname.Data();
       if( name.find(".png") == string::npos) continue;
-      if( name.find( postfix ) == string::npos) continue;
+      string pattern = postfix;
+      if( pattern == "KU" ) pattern = "FCNC_tug";
+      if( pattern == "KC" ) pattern = "FCNC_tcg";
+      if( name.find( pattern ) == string::npos) continue;
       cout << "!!!!!!!!!!!!!!!!!!!!1" << name << endl;
-      name = " \\includegraphics[width=0.7\\linewidth]{../hists/" + name + "} \\\\ \n ";
+      name = " \\includegraphics[width=0.7\\linewidth]{" + hists_path + name + "} \\\\ \n ";
       ReplaceStringInPlace( name, string("_"), string("@@@@@@@@"));
       out_string += name;
     } 

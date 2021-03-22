@@ -72,9 +72,9 @@ void histsChecker(TString inputFileName, TString postfix, string diff_mode, int 
   vector <int> indexes = getNiceColors(50);
 
   for(auto hist : *hists_central){
-    TCanvas * canv = new TCanvas(hist->GetName(), hist->GetName(), 640 * 4, 640*2);
+    TCanvas * canv = new TCanvas(hist->GetName(), hist->GetName(), 640 * 4, 640*3);
 
-    canv->Divide(4, 2);
+    canv->Divide(4, 3);
   
     TH1* h = (TH1*)hist;
 
@@ -130,10 +130,10 @@ void histsChecker(TString inputFileName, TString postfix, string diff_mode, int 
     }
 
     // TH1D* central, const std::vector<TH1D*> & others
-    for(int i = 1; i <= 6; i ++){
+    for(int i = 1; i <= 10; i ++){
       canv->cd( i );
       vector<TH1*> hists_other_i;
-      for(int j = (i-1) * hists_other.size() / 6; j < i * hists_other.size() / 6 ; j++ )
+      for(int j = (i-1) * hists_other.size() / 10; j < i * hists_other.size() / 10 ; j++ )
         hists_other_i.push_back( hists_other.at(j) );
       pm::draw_hists_difference( h, hists_other_i, diff_mode );
     }
@@ -148,10 +148,10 @@ void histsChecker(TString inputFileName, TString postfix, string diff_mode, int 
       legend->AddEntry(*it,  title.c_str(), "lf");
     }
 
-    canv->cd(7);
+    canv->cd(11);
     legend->Draw();
 
-    canv->cd(8);
+    canv->cd(12);
     stack->Draw("hist f");
 
     canv->Print(postfix + TString(hist->GetTitle()) + TString(".png"));
