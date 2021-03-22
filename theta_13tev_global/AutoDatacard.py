@@ -616,7 +616,7 @@ class DatacardMaster():
     if "cl" in mode:
       dic["CL_NUMBER_OF_CHANALS"]    = len(self.chanals) - 1
       dic["CL_NUMBER_OF_PARAMETERS"] = len(dic["PARAMETERS"])
-      dic["CL_RUN_COMMAND"] = self.cl_run_command
+      dic["CL_RUN_COMMAND"]   = self.cl_run_command
       dic["CL_PAR_VS_UNCERT"] = self.cl_par_vs_uncert
 
       # rates

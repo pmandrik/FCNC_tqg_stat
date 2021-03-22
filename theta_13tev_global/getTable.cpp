@@ -3,7 +3,6 @@
 #include "/afs/cern.ch/user/p/pmandrik/public/global_cfg/msg.hh"
 
 #include "getQuantiles.cpp"
-#include "TxtDatabase.cpp"
 
 void ReplaceStringInPlace(std::string& subject, const std::string& search,
                           const std::string& replace) {
@@ -100,7 +99,6 @@ class MyParameter {
 
 double getTable(string filename, string postfix, double def_bfrac){
   gErrorIgnoreLevel = kWarning;
-  TxtDatabase dbase("../analyse.db");
   TFile file( filename.c_str() );
 
   TTree *tree = dynamic_cast<TTree*>(file.Get("chain_1"));
@@ -143,9 +141,6 @@ double getTable(string filename, string postfix, double def_bfrac){
 
     cout << hist->GetTitle() << " " << l << " " << c << " " << u << endl;
     out_string += string(hist->GetTitle()) + " & " + get_string(l, 3) + " & " + get_string(c, 3) + " & " + get_string(u, 3) + " \\\\ \n ";
-    dbase.SetItem( string(hist->GetTitle()) + "_ll_" + postfix, get_string(l, 6),  "getTable("+filename+"," + postfix +")");
-    dbase.SetItem( string(hist->GetTitle()) + "_cl_" + postfix, get_string(c, 6),  "getTable("+filename+"," + postfix +")");
-    dbase.SetItem( string(hist->GetTitle()) + "_ul_" + postfix, get_string(u, 6),  "getTable("+filename+"," + postfix +")");
   }
   out_string += " \\hline \\end{tabular} \n \\end{center} \n";
   
@@ -252,7 +247,7 @@ double getTable(string filename, string postfix, double def_bfrac){
     while ((file=(TSystemFile*)next())) { 
       fname = file->GetName(); 
       string name = fname.Data();
-      if( name.find(".png") == string::npos) continue;
+      if( name.find(".pdf") == string::npos) continue;
       string pattern = postfix;
       if( pattern == "KU" ) pattern = "FCNC_tug";
       if( pattern == "KC" ) pattern = "FCNC_tcg";
@@ -300,7 +295,6 @@ double getTable(string filename, string postfix, double def_bfrac){
   ofstream out( ("getTable_" + postfix + ".tex").c_str() );
   out << out_string << endl;
   out.close();
-  dbase.Write();
 
   return 0;
 }

@@ -154,7 +154,7 @@ void histsChecker(TString inputFileName, TString postfix, string diff_mode, int 
     canv->cd(12);
     stack->Draw("hist f");
 
-    canv->Print(postfix + TString(hist->GetTitle()) + TString(".png"));
+    canv->Print(postfix + TString(hist->GetTitle()) + TString(".pdf"));
   }
 
 }
@@ -187,7 +187,7 @@ void histsChecker(TString inputFileName_A, TString inputFileName_B, TString post
 
     hist_a->SetMaximum( std::max( hist_b->GetMaximum(), hist_a->GetMaximum()) * 1.01 );
 
-    canv->Print(postfix + TString(hist_a->GetTitle()) + TString(".png"));
+    canv->Print(postfix + TString(hist_a->GetTitle()) + TString(".pdf"));
   }
 
 }
@@ -233,7 +233,7 @@ void histsChecker(TString inputFileName, TString postfix, int mode){
       }
     }
 
-    canv->Print(postfix + TString(hist->GetTitle()) + TString(".png"));
+    canv->Print(postfix + TString(hist->GetTitle()) + TString(".pdf"));
   }
 
 }

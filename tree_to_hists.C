@@ -43,7 +43,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
 
   // SYSTEMATIC IN THE CENTRAL SAME FILES
   vector<string> VARIATION_SYS_T2 = {};
-  vector<string> VARIATION_SYS_T2_base = {"pdf", "PUJetIdTag", "PUJetIdMistag", "PileUp", /*"TagRate", "MistagRate",*/ "Ren", "Fac", "RenFac", "LepId", "LepIso", "LepTrig"};
+  vector<string> VARIATION_SYS_T2_base = {"pdf", "PUJetIdTag", /*"PUJetIdMistag",*/ "PileUp", /*"TagRate", "MistagRate",*/ "Ren", "Fac", "RenFac", "LepId", "LepIso", "LepTrig"};
   vector<string> VARIATION_SYS_T2_extra1 = {"Isr", "Fsr"}; // _red _con
   vector<string> VARIATION_SYS_T2_extra2 = {"_G2GG_muR_", "_G2QQ_muR_", "_Q2QG_muR_", "_X2XG_muR_", "_G2GG_cNS_", "_G2QQ_cNS_", "_Q2QG_cNS_", "_X2XG_cNS_"}; // isr up
   vector<string> VARIATION_SYS_T2_extra3 = {"fsr_G2GG_muR_", "fsr_G2QQ_muR_", "fsr_Q2QG_muR_", "fsr_X2XG_muR_", "fsr_G2GG_cNS_", "fsr_G2QQ_cNS_", "fsr_Q2QG_cNS_", "fsr_X2XG_cNS_"}; // isr up
@@ -100,7 +100,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
   }
   else if( RELEASE=="2021_deep" ){ 
     string ppath = "/scratch2/pvolkov/samples/" ;
-    PATH_PREFIX     = ppath + "tuples_merged/" ;
+    PATH_PREFIX     = ppath + "tuples_merged/"  ;
     PATH_EXCLUDE    = ppath ;
     PATH_SUSTEMATIC = ppath + "tuples_merged/Syst/" ;
     use_rel_iso_cut = false;
@@ -114,9 +114,9 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
   string SELECTION_WQQ    = "*((Wjets_type ==2)+(Wjets_type ==1))";
   string SELECTION_Wc     = "*(Wjets_type ==4)";
   string SELECTION_Wb     = "*(Wjets_type ==3)";
-  string SELECTION_Wother = "*((Wjets_type ==5)+(Wjets_type ==6))";
-  // string SELECTION_Wother = "*((Wjets_type ==6))";
-  // string SELECTION_Wlight = "*((Wjets_type ==5))";
+  // string SELECTION_Wother = "*((Wjets_type ==5)+(Wjets_type ==6))";
+  string SELECTION_Wother = "*((Wjets_type ==6))";
+  string SELECTION_Wlight = "*((Wjets_type ==5))";
 
 
   /*
@@ -167,9 +167,8 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
     vrule    = "BNN_qcd_tchan_5vars_2"; // "BNN_qcd"; 
 
     PREFIX_NTUPLES = PATH_PREFIX + CENTRAL_FOLDER +"/";
-    EventsExcluder * excl = nullptr;
-    //new EventsExcluder( PATH_EXCLUDE + "qcd_11v/qcd_JID_2_trainEvents.txt" );
-    //excl->Print();
+    EventsExcluder * excl = new EventsExcluder( "/afs/cern.ch/work/p/pvolkov/public/Networks/13Tev/nov20/qcd_tchan_5vars/qcd_tchan_5vars_trainEvents.txt" );
+    excl->Print();
 
     string data_weight = "(N_BJ==1) * (RelIso_Lep < 0.04)";
     string qcd_weight  = "weight * (N_BJ==1)";
@@ -211,8 +210,9 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
     if(MODE == "SM"){
       vrule = "BNN_sm_powheg_comphep_2"; // "BNN_sm"
       if( BACKGROUND_QCD_CUT ) vrule = "DNN_sm_pow_comph_Wjets"; // "BNN_qcd_tchan_5vars"; DNN_sm_pow_comph_Wjets, BNN_sm_powheg_comphep_wjets
-      // excl = new EventsExcluder( "/afs/cern.ch/work/p/pvolkov/public/Networks/13Tev/nov20/sm_pow_comph_2/bnn_sm_pow_comph_qcd_5vars_trainEvents.txt" );
-      excl = new EventsExcluder( "/afs/cern.ch/work/p/pvolkov/public/Networks/13Tev/nov20/qcd_tchan_5vars/qcd_tchan_5vars_trainEvents.txt" );
+      // /afs/cern.ch/work/p/pvolkov/public/Networks/13Tev/nov20/sm_pow_comh_3/bnn_sm_pow_comph_qcd_5vars_trainEvents.txt
+      // /afs/cern.ch/work/p/pvolkov/public/Networks/13Tev/nov20/qcd_tchan_5vars/qcd_tchan_5vars_trainEvents.txt
+      excl = new EventsExcluder( "/afs/cern.ch/work/p/pvolkov/public/Networks/13Tev/nov20/sm_pow_comh_3/bnn_sm_pow_comph_qcd_5vars_trainEvents.txt" );
     }
     //vrule = "Eta_LJ";
     //rmin = -5, rmax = 5; 
@@ -234,7 +234,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
     string mc_selection_Wc     = mc_selection+SELECTION_Wc;
     string mc_selection_Wb     = mc_selection+SELECTION_Wb;
     string mc_selection_Wother = mc_selection+SELECTION_Wother;
-    // string mc_selection_Wlight = mc_selection+SELECTION_Wlight;
+    string mc_selection_Wlight = mc_selection+SELECTION_Wlight;
 
     PREFIX_NTUPLES = PATH_PREFIX + CENTRAL_FOLDER+"/";
     fill_hist("data",    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_DATA,     tree_name, vrule, data_selection, nullptr);
@@ -248,7 +248,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
     fill_hist("Wc",      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wc,     excl);
     fill_hist("Wb",      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wb,     excl);
     fill_hist("Wother",  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wother, excl);
-    // fill_hist("Wlight",  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wlight, excl);
+    fill_hist("Wlight",  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wlight, excl);
     // fill_hist("Wjets",   NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection,        excl);
     fill_hist("t_ch",    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC,  tree_name, vrule, mc_selection,        excl);
     //fill_hist("t_alt",    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC_CH,  tree_name, vrule, mc_selection,        excl);
@@ -324,6 +324,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
       fill_hist_sys("Wc_"+systematic_,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, wc_fact_up + mc_selection_up+SELECTION_Wc, wc_fact_dn + mc_selection_down+SELECTION_Wc,   excl);
       fill_hist_sys("Wb_"+systematic_,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, wb_fact_up + mc_selection_up+SELECTION_Wb, wb_fact_dn + mc_selection_down+SELECTION_Wb,   excl);
       fill_hist_sys("Wother_"+systematic_,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, wother_fact_up + mc_selection_up+SELECTION_Wother, wother_fact_dn + mc_selection_down+SELECTION_Wother, excl);
+      fill_hist_sys("Wlight_"+systematic_,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, wother_fact_up + mc_selection_up+SELECTION_Wlight, wother_fact_dn + mc_selection_down+SELECTION_Wlight, excl);
       // fill_hist_sys("Wjets_"+systematic_,   NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, wj_fact_up + mc_selection_up, wj_fact_dn + mc_selection_down, excl);
       fill_hist_sys("t_ch_"+systematic_,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC, tree_name, vrule, tc_fact_up+mc_selection_up, tc_fact_dn+mc_selection_down, excl);
       //fill_hist_sys("t_alt_"+systematic_, NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC, tree_name, vrule, mc_selection_up, mc_selection_down, excl);
@@ -346,15 +347,16 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
             PREFIX_NTUPLES = PATH_PREFIX + jer_bin_files[j] + "/";
             
             cout << "process folder ... " << PREFIX_NTUPLES << endl;
-            fill_hist("DY_"+sname,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_DY_ALT,  tree_name, vrule, mc_selection + extra_select,        excl);
+            fill_hist("DY_"+sname,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_DY_ALT,  tree_name, vrule, mc_selection + extra_select,    excl);
             fill_hist("ttbar_"+sname,   NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TT,  tree_name, vrule, mc_selection + extra_select,        excl);
             fill_hist("Diboson_"+sname, NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_DB,  tree_name, vrule, mc_selection + extra_select,        excl);
-            fill_hist("s_ch_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_SC,  tree_name, vrule, mc_selection_sch + extra_select,        excl);
-            fill_hist("tW_ch_"+sname,   NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TW,  tree_name, vrule, mc_selection_TW + extra_select,        excl);
+            fill_hist("s_ch_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_SC,  tree_name, vrule, mc_selection_sch + extra_select,    excl);
+            fill_hist("tW_ch_"+sname,   NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TW,  tree_name, vrule, mc_selection_TW + extra_select,     excl);
             fill_hist("WQQ_"+sname,     NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_WQQ + extra_select,    excl);
             fill_hist("Wc_"+sname,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wc + extra_select,     excl);
             fill_hist("Wb_"+sname,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wb + extra_select,     excl);
             fill_hist("Wother_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wother + extra_select, excl);
+            fill_hist("Wlight_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wlight + extra_select, excl);
             fill_hist("t_ch_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC,  tree_name, vrule, mc_selection + extra_select,        excl);
             //fill_hist("t_alt_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC_CH,  tree_name, vrule, mc_selection + extra_select,        excl);
 
@@ -384,6 +386,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
             fill_hist("Wc_"+sname,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wc + extra_select,     excl);
             fill_hist("Wb_"+sname,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wb + extra_select,     excl);
             fill_hist("Wother_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wother + extra_select, excl);
+            fill_hist("Wlight_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wlight + extra_select, excl);
             fill_hist("t_ch_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC,  tree_name, vrule, mc_selection + extra_select,        excl);
             //fill_hist("t_alt_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC_CH,  tree_name, vrule, mc_selection + extra_select,        excl);
 
@@ -409,6 +412,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
         fill_hist("Wc_"+sname,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wc + extra_select,     excl);
         fill_hist("Wb_"+sname,      NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wb + extra_select,     excl);
         fill_hist("Wother_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wother + extra_select, excl);
+        fill_hist("Wlight_"+sname,  NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection_Wlight + extra_select, excl);
         // fill_hist("Wjets_"+sname,   NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_WJ,  tree_name, vrule, mc_selection + extra_select,        excl);
         fill_hist("t_ch_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC,  tree_name, vrule, mc_selection + extra_select,        excl);
         //fill_hist("t_alt_"+sname,    NBINS, rmin, rmax, out_file, PREFIX_NTUPLES, FILES_TC_CH,  tree_name, vrule, mc_selection + extra_select,        excl);
@@ -426,6 +430,8 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
     fill_hist("tW_ch_IsrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_isr_down.root", "tW-channel-top_isr_down.root"},  tree_name, vrule, mc_selection_TW,        excl);
     fill_hist("tW_ch_FsrUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_fsr_up.root", "tW-channel-top_fsr_up.root"},      tree_name, vrule, mc_selection_TW,        excl);
     fill_hist("tW_ch_FsrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_fsr_down.root", "tW-channel-top_fsr_down.root"},  tree_name, vrule, mc_selection_TW,        excl);
+    fill_hist("tW_ch_UETuneUp", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-top_tune_up.root", "tW-channel-tbar_tune_up.root"},  tree_name, vrule, mc_selection_TW,        excl);
+    fill_hist("tW_ch_UETuneDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-top_tune_down.root", "tW-channel-tbar_tune_down.root"},  tree_name, vrule, mc_selection_TW,        excl);
 
     fill_hist("ttbar_hdampUp",    NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_hdamp_up.root"},    tree_name, vrule, mc_selection,        excl);
     fill_hist("ttbar_hdampDown",  NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_hdamp_down.root"},  tree_name, vrule, mc_selection,        excl);
@@ -435,6 +441,15 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
     fill_hist("ttbar_IsrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_isr_down.root"},  tree_name, vrule, mc_selection,        excl);
     fill_hist("ttbar_FsrUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_fsr_up.root"},    tree_name, vrule, mc_selection,        excl);
     fill_hist("ttbar_FsrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_fsr_down.root"},  tree_name, vrule, mc_selection,        excl);
+
+    fill_hist("t_ch_UETuneDown",  NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"t-channel-tbar_tune_down.root", "t-channel-top_tune_down.root"}, tree_name, vrule, mc_selection, excl);
+    fill_hist("t_ch_UETuneUp",    NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"t-channel-top_tune_down.root", "t-channel-top_tune_up.root"}, tree_name, vrule, mc_selection, excl);
+
+    // unmariginalysed ... 
+    fill_hist("ttbar_colourFlipUp",  NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_colourFlip.root"},   tree_name, vrule, mc_selection,        excl);
+    fill_hist("ttbar_erdOnUp",       NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_erdOn.root"},        tree_name, vrule, mc_selection,        excl);
+    fill_hist("ttbar_QCDbasedUp",    NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_qcd_based.root"},    tree_name, vrule, mc_selection,        excl);
+
     out_file->Close();
   }
   else cout << __FILE__ " : unknow mode " << MODE << endl;

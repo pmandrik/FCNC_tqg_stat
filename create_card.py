@@ -46,15 +46,16 @@ def sm_jul(args):
     "Wc",      0.30, '(-2.5,2.0)',
     "Wb",      0.30, '(-2.5,3.5)',
     "Wother",  0.30, '(-3.5,1.5)',
-    #"Wjets",   0.30, '(-3.5,1.5)',
+    "Wlight",  0.30, '(-3.5,1.5)',
+   #"Wjets",   0.30, '(-3.5,1.5)',
     "QCD",     1.00, '(-3.0,1.5)',
   ]
 
   mult_pars = ["lumi"]
   mult_errs = [0.025]
 
-  interp_pars  = ["TagRate", "MistagRate" ] # "PUJetIdTag" "PUJetIdMistag"
-  interp_pars  = ["jes", "lf", "hf", "hfstats1", "hfstats2", "lfstats1", "lfstats2", "cferr1", "cferr2"]
+  interp_pars  = ["TagRate", "MistagRate" ]
+  interp_pars  = ["jes", "lf", "hf", "hfstats1", "hfstats2", "lfstats1", "lfstats2", "cferr1", "cferr2" ]
   interp_pars += ["UnclMET", "PileUp", "pdf", "PUJetIdTag", "MER"]
   interp_pars += ["JER_eta0_193", "JER_eta193_25", "JER_eta25_3_p0_50", "JER_eta25_3_p50_Inf", "JER_eta3_5_p0_50", "JER_eta3_5_p50_Inf"]
   interp_pars += ["JEC_eta0_25", "JEC_eta25_5"]
@@ -64,6 +65,9 @@ def sm_jul(args):
   xsr_pars     = ["Isr", "Fsr"]
   interp_pars += xsr_pars
 
+  has_muRmuF = ["s_ch", "ttbar", "WQQ", "Wb", "Wc", "Wother", "DY"]
+  has_xsr    = ["ttbar", "tW_ch"]
+
   pss = ["_G2GG_muR_", "_G2QQ_muR_", "_Q2QG_muR_", "_X2XG_muR_", "_G2GG_cNS_", "_G2QQ_cNS_", "_Q2QG_cNS_", "_X2XG_cNS_"]
   pss = []
   pss_names = []
@@ -71,12 +75,6 @@ def sm_jul(args):
     for ps in pss:
       interp_pars += [ item + ps ]
       pss_names += [ item + ps ]
-
-  has_red = ["s_ch", "t_ch", "ttbar", "WQQ", "Wb", "Wc", "Wother", "DY"]
-  has_isr = ["s_ch", "t_ch", "ttbar", "tW_ch"]
-  
-  has_muRmuF = ["s_ch", "ttbar", "WQQ", "Wb", "Wc", "Wother", "DY"]
-  has_xsr    = ["ttbar", "tW_ch"]
 
   datacard.parameters_order_list  = [ "sigma_" + name for name, err, rang in zip( chanals_names[::3], chanals_names[1::3], chanals_names[2::3] ) ] 
   datacard.parameters_order_list += mult_pars + interp_pars
@@ -95,6 +93,11 @@ def sm_jul(args):
   for name in interp_pars :
     parameter = atd.Parameter( name, "gauss", "shape")
     common_interp_pars += [ parameter ]
+
+  hdamp_par  = atd.Parameter( "hdamp",  "gauss", "shape" )
+  UETune_par = atd.Parameter( "UETune", "gauss", "shape" )
+  Isr_par    = atd.Parameter( "ISR", "gauss", "shape"    )
+  Fsr_par    = atd.Parameter( "FSR", "gauss", "shape"    )
 
   # define chanals
   for name, err, rang in zip( chanals_names[::3], chanals_names[1::3], chanals_names[2::3] ):
@@ -352,6 +355,19 @@ def sys_impact(args):
   dcard_exp  = copy.deepcopy(dcard)
   dcard_exp.name = "expected_"+dcard.name + ""
   dcard_exp.save( args.mode.split(" ") )
+
+  unmarges = [ ["ttbar", "colourFlipUp"],["ttbar", "erdOnUp"],["ttbar", "QCDbasedUp"] ]
+  for chname, sys in unmarges:
+    dcard = copy.deepcopy(datacard)
+    dcard.name = "expected_" + dcard.name + "_" + sys
+
+    for chanal in dcard.chanals:
+      if chanal.name != chname : continue
+      chanal.toy_hist_name = channel + "_" + sys
+
+    dcard.save( args.mode.split(" ") )
+  
+
   return None;
 
 
