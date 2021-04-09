@@ -69,8 +69,7 @@ if [ "$mode" = "sys_impact" ] || [ "$mode" = "full" ]; then
     cp ../expected_sm_jul_theta.cfg .
     $srcdir/run_theta.sh expected_sm_jul_theta.cfg
 
-    for f in expected_*_theta.cfg; do
-      cd $workdir/sys_check/$package
+    for f in $workdir/sys_check/$package/expected_*_theta.cfg; do
       if [[ $f =~ expected_sm_jul_(.*)_theta.cfg ]]; then  
         sys_name=${BASH_REMATCH[1]} 
         mkdir -p "$workdir/sys_check/$package/$sys_name" && cd "$_"
