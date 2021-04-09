@@ -103,8 +103,9 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
     PATH_PREFIX     = ppath + "tuples_merged/"  ;
     PATH_EXCLUDE    = ppath ;
     PATH_SUSTEMATIC = ppath + "tuples_merged/Syst/" ;
+    PATH_SUSTEMATIC = "/scratch2/pvolkov/samples/tuples_merged/Syst_new/";
     use_rel_iso_cut = false;
-    use_comphep     = true;
+    use_comphep     = false;
   }
   else{
     cerr << "Unknow RELEASE, please provide correct value, exit ..." << endl;
@@ -115,8 +116,8 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
   string SELECTION_Wc     = "*(Wjets_type ==4)";
   string SELECTION_Wb     = "*(Wjets_type ==3)";
   // string SELECTION_Wother = "*((Wjets_type ==5)+(Wjets_type ==6))";
-  string SELECTION_Wother = "*((Wjets_type ==6))";
-  string SELECTION_Wlight = "*((Wjets_type ==5))";
+  string SELECTION_Wother = "*((Wjets_type == 5))";
+  string SELECTION_Wlight = "*((Wjets_type == 6))";
 
 
   /*
@@ -208,7 +209,7 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
 
     // SM < 
     if(MODE == "SM"){
-      vrule = "BNN_sm_powheg_comphep_2"; // "BNN_sm"
+      vrule = "DNN_sm_pow_comph_Wjets"; // BNN_sm_powheg_comphep_wjets
       if( BACKGROUND_QCD_CUT ) vrule = "DNN_sm_pow_comph_Wjets"; // "BNN_qcd_tchan_5vars"; DNN_sm_pow_comph_Wjets, BNN_sm_powheg_comphep_wjets
       // /afs/cern.ch/work/p/pvolkov/public/Networks/13Tev/nov20/sm_pow_comh_3/bnn_sm_pow_comph_qcd_5vars_trainEvents.txt
       // /afs/cern.ch/work/p/pvolkov/public/Networks/13Tev/nov20/qcd_tchan_5vars/qcd_tchan_5vars_trainEvents.txt
@@ -422,28 +423,29 @@ void tree_to_hists(string MODE, string RELEASE, string OUTPUT_FILE_NAME, int NBI
       }
     }
 
+    vrule = "DNN_sm_pow_comph_wjets";
     // tW-chan: hdamp и isr/fsr (в tW нет PS weights, но не знаю, используешь ли ты эти семплы сейчас)
     // ttbar: hdamp, tune, colourFlip, erdOn, qcd_based и отдельные isr/fsr (как альтернатива PSweights).
     fill_hist("tW_ch_hdampUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_hdamp_up.root", "tW-channel-top_hdamp_up.root"},      tree_name, vrule, mc_selection_TW,        excl);
     fill_hist("tW_ch_hdampDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_hdamp_down.root", "tW-channel-top_hdamp_down.root"},  tree_name, vrule, mc_selection_TW,        excl);
-    fill_hist("tW_ch_IsrUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_isr_up.root", "tW-channel-top_isr_up.root"},      tree_name, vrule, mc_selection_TW,        excl);
-    fill_hist("tW_ch_IsrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_isr_down.root", "tW-channel-top_isr_down.root"},  tree_name, vrule, mc_selection_TW,        excl);
-    fill_hist("tW_ch_FsrUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_fsr_up.root", "tW-channel-top_fsr_up.root"},      tree_name, vrule, mc_selection_TW,        excl);
-    fill_hist("tW_ch_FsrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_fsr_down.root", "tW-channel-top_fsr_down.root"},  tree_name, vrule, mc_selection_TW,        excl);
     fill_hist("tW_ch_UETuneUp", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-top_tune_up.root", "tW-channel-tbar_tune_up.root"},  tree_name, vrule, mc_selection_TW,        excl);
     fill_hist("tW_ch_UETuneDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-top_tune_down.root", "tW-channel-tbar_tune_down.root"},  tree_name, vrule, mc_selection_TW,        excl);
+    fill_hist("tW_ch_isrUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_isr_up.root", "tW-channel-top_isr_up.root"},      tree_name, vrule, mc_selection_TW,        excl);
+    fill_hist("tW_ch_isrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_isr_down.root", "tW-channel-top_isr_down.root"},  tree_name, vrule, mc_selection_TW,        excl);
+    fill_hist("tW_ch_fsrUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_fsr_up.root", "tW-channel-top_fsr_up.root"},      tree_name, vrule, mc_selection_TW,        excl);
+    fill_hist("tW_ch_fsrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"tW-channel-tbar_fsr_down.root", "tW-channel-top_fsr_down.root"},  tree_name, vrule, mc_selection_TW,        excl);
 
     fill_hist("ttbar_hdampUp",    NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_hdamp_up.root"},    tree_name, vrule, mc_selection,        excl);
     fill_hist("ttbar_hdampDown",  NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_hdamp_down.root"},  tree_name, vrule, mc_selection,        excl);
     fill_hist("ttbar_UETuneUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_tune_up.root"},     tree_name, vrule, mc_selection,        excl);
     fill_hist("ttbar_UETuneDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_tune_down.root"},   tree_name, vrule, mc_selection,        excl);
-    fill_hist("ttbar_IsrUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_isr_up.root"},    tree_name, vrule, mc_selection,        excl);
-    fill_hist("ttbar_IsrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_isr_down.root"},  tree_name, vrule, mc_selection,        excl);
-    fill_hist("ttbar_FsrUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_fsr_up.root"},    tree_name, vrule, mc_selection,        excl);
-    fill_hist("ttbar_FsrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_fsr_down.root"},  tree_name, vrule, mc_selection,        excl);
+    fill_hist("ttbar_isrUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_isr_up.root"},    tree_name, vrule, mc_selection,        excl);
+    fill_hist("ttbar_isrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_isr_down.root"},  tree_name, vrule, mc_selection,        excl);
+    fill_hist("ttbar_fsrUp",   NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_fsr_up.root"},    tree_name, vrule, mc_selection,        excl);
+    fill_hist("ttbar_fsrDown", NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_fsr_down.root"},  tree_name, vrule, mc_selection,        excl);
 
     fill_hist("t_ch_UETuneDown",  NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"t-channel-tbar_tune_down.root", "t-channel-top_tune_down.root"}, tree_name, vrule, mc_selection, excl);
-    fill_hist("t_ch_UETuneUp",    NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"t-channel-top_tune_down.root", "t-channel-top_tune_up.root"}, tree_name, vrule, mc_selection, excl);
+    fill_hist("t_ch_UETuneUp",    NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"t-channel-tbar_tune_up.root",   "t-channel-top_tune_up.root"}, tree_name, vrule, mc_selection, excl);
 
     // unmariginalysed ... 
     fill_hist("ttbar_colourFlipUp",  NBINS, rmin, rmax, out_file, PATH_SUSTEMATIC, {"ttbar_colourFlip.root"},   tree_name, vrule, mc_selection,        excl);

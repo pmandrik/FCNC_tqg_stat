@@ -50,7 +50,7 @@ observables = {
   {% CHANAL.name %}_alt = {
     type = "root_histogram";
     filename = "{% CHANAL.toy_file_name %}";
-    histoname = "{% CHANAL.toy_hist_name %}";
+    histoname = "{% CHANAL.alt_hist_name %}";
     use_errors = true; 
   };
 {% for PARAMETER in CHANAL.get_shape_params %}
@@ -58,13 +58,13 @@ observables = {
   {% CHANAL.name %}_{% PARAMETER %}{% INTER_POSTFIX_PLUS %} = {
     type = "root_histogram";
     filename = "{% INPUT_FILE_MC %}";
-    histoname = "{% CHANAL.toy_hist_name %}_{% PARAMETER %}{% INTER_POSTFIX_PLUS %}";
+    histoname = "{% CHANAL.base_hist_name %}_{% PARAMETER %}{% INTER_POSTFIX_PLUS %}";
     use_errors = false; 
   };
   {% CHANAL.name %}_{% PARAMETER %}{% INTER_POSTFIX_MINUS %} = {
     type = "root_histogram";
     filename = "{% INPUT_FILE_MC %}";
-    histoname = "{% CHANAL.toy_hist_name %}_{% PARAMETER %}{% INTER_POSTFIX_MINUS %}";
+    histoname = "{% CHANAL.base_hist_name %}_{% PARAMETER %}{% INTER_POSTFIX_MINUS %}";
     use_errors = false; 
   };
 
@@ -87,8 +87,8 @@ observables = {
             parameters = {% func theta_set_like CHANAL.get_shape_params %}{% endfunc %};
             nominal-histogram = "@{% CHANAL.name %}";
 {% for PARAMETER in CHANAL.get_shape_params %}
-            {% PARAMETER %}-plus-histogram  = "@{% CHANAL.name %}_{% PARAMETER %}{% INTER_POSTFIX_PLUS %}";
-            {% PARAMETER %}-minus-histogram = "@{% CHANAL.name %}_{% PARAMETER %}{% INTER_POSTFIX_MINUS %}";
+            {% PARAMETER %}-plus-histogram  = "@{% CHANAL.base_hist_name %}_{% PARAMETER %}{% INTER_POSTFIX_PLUS %}";
+            {% PARAMETER %}-minus-histogram = "@{% CHANAL.base_hist_name %}_{% PARAMETER %}{% INTER_POSTFIX_MINUS %}";
 {% endfor %}          };
         };
 {% endif %}
@@ -138,10 +138,10 @@ observables = {
             histogram = { 
               type = "interpolating_histo";
               parameters = {% func theta_set_like CHANAL.get_shape_params_fix %}{% endfunc %};
-              nominal-histogram = "@{% CHANAL.name %}_alt";
+              nominal-histogram = "@{% CHANAL.base_hist_name %}_alt";
   {% for PARAMETER in CHANAL.get_shape_params %}
-              {% PARAMETER %}_fix-plus-histogram  = "@{% CHANAL.name %}_{% PARAMETER %}{% INTER_POSTFIX_PLUS %}";
-              {% PARAMETER %}_fix-minus-histogram = "@{% CHANAL.name %}_{% PARAMETER %}{% INTER_POSTFIX_MINUS %}";
+              {% PARAMETER %}_fix-plus-histogram  = "@{% CHANAL.base_hist_name %}_{% PARAMETER %}{% INTER_POSTFIX_PLUS %}";
+              {% PARAMETER %}_fix-minus-histogram = "@{% CHANAL.base_hist_name %}_{% PARAMETER %}{% INTER_POSTFIX_MINUS %}";
   {% endfor %}          };
           };
   {% endif %}
@@ -398,6 +398,8 @@ class Chanal():
     self.cl_rate = -9999.999
 
     self.toy_hist_name     = name
+    self.base_hist_name    = name
+    self.alt_hist_name     = name
     self.toy_file_name     = ""
     self.toy_normalization = 1.0
 

@@ -3,9 +3,10 @@
 #---------- 0. Please Set Parameters
 
 nbins=10
-niters=500000
+niters=1250000
 release="2021_deep" # "2020_novenber_NoIsoCut"
 burn_in_frac=0.1 
+nchains=2
 
 mode=$1
 #  possible modes:
@@ -55,14 +56,25 @@ if [ "$mode" = "sys_impact" ] || [ "$mode" = "full" ]; then
   mkdir -p "$workdir/sys_check/" && cd "$_"
   if [ "$package" = "sm" ]; then
     mkdir -p "$workdir/sys_check/$package" && cd "$_"
-    python $cfgdir/create_card.py --fname="sys_impact" --nbins=$nbins --niters=$niters --input="$workdir/hists/hists_SM.root" --mode="theta"
+    python $cfgdir/create_card.py --fname="sys_impact" --nbins=$nbins --niters=$niters --input="$workdir/hists/hists_SM.root" --mode="theta" --nchains=$nchains
+
+    #for sys_name in "colourFlipUp" "erdOnUp" "QCDbasedUp"; do
+    #  cd "$workdir/sys_check/$package/$sys_name/" && cd "$_"
+    #  cp "../expected_sm_jul_"$sys_name"_theta.cfg" .
+    #  $srcdir/run_theta.sh "expected_sm_jul_"$sys_name"_theta.cfg"
+    #done;
+    #exit
+
+    mkdir -p "$workdir/sys_check/$package/expected" && cd "$_"
+    cp ../expected_sm_jul_theta.cfg .
+    $srcdir/run_theta.sh expected_sm_jul_theta.cfg
+
     for f in expected_*_theta.cfg; do
       cd $workdir/sys_check/$package
       if [[ $f =~ expected_sm_jul_(.*)_theta.cfg ]]; then  
         sys_name=${BASH_REMATCH[1]} 
         mkdir -p "$workdir/sys_check/$package/$sys_name" && cd "$_"
         cp ../*$sys_name*.cfg .
-        #cp ../*$sys_name*.tex .
         $srcdir/run_theta.sh $f
         #root -q -b -l "$srcdir/getTable.cpp(\"expected_"$sys_name"_theta.root\", \"expected_theta\", $burn_in_frac)"
         #pdflatex -interaction=batchmode getTable_expected_theta.tex
@@ -162,7 +174,7 @@ make_analyse_sm(){
   input_hists=$1 # "$workdir/hists/hists_SM.root"
   nbins_=$2
 
-  python $cfgdir/create_card.py --fname="sm_jul" --nbins=$nbins_ --niters=$niters --input=$input_hists --mode="latex theta mRoot"
+  python $cfgdir/create_card.py --fname="sm_jul" --nbins=$nbins_ --niters=$niters --input=$input_hists --mode="latex theta mRoot" --nchains=$nchains
   $srcdir/run_theta.sh sm_jul_theta.cfg
   
   root -q -b -l "$srcdir/burnInStudy.cpp(\"sm_jul_theta.root\", \"sigma_t_ch\", \"BurnInStudySMTheta.png\")"
@@ -214,14 +226,14 @@ set -x
 if [ "$mode" = "fcnc" ] || [ "$mode" = "full" ]; then
   echo "$myname, FCNC ... "
   mkdir -p "$workdir/fcnc" && cd "$_"
-    python $cfgdir/create_card.py --fname="fcnc_tug_jul" --nbins=$nbins --niters=$niters --input="$workdir/hists_fcnc/hists_FCNC_tug.root" --mode="latex theta"
+    python $cfgdir/create_card.py --fname="fcnc_tug_jul" --nbins=$nbins --niters=$niters --input="$workdir/hists_fcnc/hists_FCNC_tug.root" --mode="latex theta" --nchains=$nchains
     $srcdir/run_theta.sh fcnc_tug_jul_theta.cfg
     root -q -b -l "$srcdir/burnInStudy.cpp(\"fcnc_tug_jul_theta.root\", \"KU\", \"BurnInStudyKUTheta.png\")"
     root -q -b -l "$srcdir/getTable.cpp(\"fcnc_tug_jul_theta.root\", \"KU\", $burn_in_frac)"
     pdflatex -interaction=batchmode getTable_KU.tex
     mv getTable_KU.pdf table_KU_def.pdf
 
-    python $cfgdir/create_card.py --fname="fcnc_tcg_jul" --nbins=$nbins --niters=$niters --input="$workdir/hists_fcnc/hists_FCNC_tcg.root" --mode="latex theta"
+    python $cfgdir/create_card.py --fname="fcnc_tcg_jul" --nbins=$nbins --niters=$niters --input="$workdir/hists_fcnc/hists_FCNC_tcg.root" --mode="latex theta" --nchains=$nchains
     $srcdir/run_theta.sh fcnc_tcg_jul_theta.cfg
     root -q -b -l "$srcdir/burnInStudy.cpp(\"fcnc_tcg_jul_theta.root\", \"KC\", \"BurnInStudyKCTheta.png\")"
     root -q -b -l "$srcdir/getTable.cpp(\"fcnc_tcg_jul_theta.root\", \"KC\", $burn_in_frac)"
@@ -233,7 +245,7 @@ else echo "$myname, skip sm analyse"; fi
 
 if [ "$mode" = "fcnc_var" ] || [ "$mode" = "full" ]; then
   mkdir -p "$workdir/fcnc_var" && cd "$_"
-  python $cfgdir/create_card.py --fname="fcnc_tug_jul_expected_variation" --nbins=$nbins --niters=$niters --input="$workdir/hists/hists_FCNC_tug.root" --mode="latex theta"
+  python $cfgdir/create_card.py --fname="fcnc_tug_jul_expected_variation" --nbins=$nbins --niters=$niters --input="$workdir/hists/hists_FCNC_tug.root" --mode="latex theta" --nchains=$nchains
   
   for name in fcnc_*cfg; do
     echo $name

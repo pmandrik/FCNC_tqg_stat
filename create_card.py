@@ -3,7 +3,7 @@
 import sys
 import copy
 
-sys.path.append( "/afs/cern.ch/user/p/pmandrik/public/analysis/MSU_statistics_13TEV/theta_13tev_global/" )
+sys.path.append( "/afs/cern.ch/user/p/pmandrik/public/analysis/MSU_statistics_13TEV/20-04-03_tqg/FCNC_tqg_stat/theta_13tev_global/" )
 
 import AutoDatacard as atd
 
@@ -47,12 +47,12 @@ def sm_jul(args):
     "Wb",      0.30, '(-2.5,3.5)',
     "Wother",  0.30, '(-3.5,1.5)',
     "Wlight",  0.30, '(-3.5,1.5)',
-   #"Wjets",   0.30, '(-3.5,1.5)',
+  # "Wjets",   0.30, '(-3.5,1.5)',
     "QCD",     1.00, '(-3.0,1.5)',
   ]
 
-  mult_pars = ["lumi"]
-  mult_errs = [0.025]
+  mult_pars = [ "lumi" ]
+  mult_errs = [ 0.025  ]
 
   interp_pars  = ["TagRate", "MistagRate" ]
   interp_pars  = ["jes", "lf", "hf", "hfstats1", "hfstats2", "lfstats1", "lfstats2", "cferr1", "cferr2" ]
@@ -94,10 +94,11 @@ def sm_jul(args):
     parameter = atd.Parameter( name, "gauss", "shape")
     common_interp_pars += [ parameter ]
 
-  hdamp_par  = atd.Parameter( "hdamp",  "gauss", "shape" )
-  UETune_par = atd.Parameter( "UETune", "gauss", "shape" )
-  Isr_par    = atd.Parameter( "ISR", "gauss", "shape"    )
-  Fsr_par    = atd.Parameter( "FSR", "gauss", "shape"    )
+  hdamp_par  = atd.Parameter( "hdamp", "gauss", "shape")
+  UETune_par = atd.Parameter( "UETune", "gauss", "shape")
+
+  with_hdamp  = ["ttbar", "tW_ch"]
+  with_UETune = ["ttbar", "tW_ch"]
 
   # define chanals
   for name, err, rang in zip( chanals_names[::3], chanals_names[1::3], chanals_names[2::3] ):
@@ -105,6 +106,9 @@ def sm_jul(args):
     chanal.parameters = copy.copy(common_mult_pars)
 
     interp_pars = []
+    if name in with_hdamp  : interp_pars += [ hdamp_par  ]
+    if name in with_UETune : interp_pars += [ UETune_par ]
+
     for param in common_interp_pars:
       if param.name in muRmuF_pars  and name not in has_muRmuF : continue
       if param.name in xsr_pars     and name not in has_xsr    : continue
@@ -197,6 +201,9 @@ def fcnc_1d_jul(args, coupling_hist_name):
   hdamp_par  = atd.Parameter( "hdamp", "gauss", "shape")
   UETune_par = atd.Parameter( "UETune", "gauss", "shape")
 
+  with_hdamp  = ["ttbar", "tW_ch"]
+  with_UETune = ["ttbar", "tW_ch"]
+
   # define chanals
   for name, err, rang in zip( chanals_names[::3], chanals_names[1::3], chanals_names[2::3] ):
     chanal        = atd.Chanal( name )
@@ -254,7 +261,7 @@ def expected_sm(args):
   datacard.input_file_mc   = args.input
   datacard.input_file_data = args.input_data
   datacard.mcmc_iters      = args.niters
-  datacard.mcmc_chains     = 1
+  datacard.mcmc_chains     = args.nchains
   datacard.dice_poisson    = False
   datacard.dice_systematic = False
   datacard.azimov          = True
@@ -287,6 +294,10 @@ def sys_impact(args):
   
   datacard = expected_sm(args)
 
+  dcard_exp  = copy.deepcopy(datacard)
+  dcard_exp.name = "expected_"+dcard_exp.name + ""
+  dcard_exp.save( args.mode.split(" ") )
+
   datacard.input_file_mc   = args.input
   datacard.input_file_data = args.input_data
   datacard.mcmc_iters      = args.niters
@@ -295,7 +306,18 @@ def sys_impact(args):
   datacard.dice_poisson    = False
   datacard.dice_systematic = False
   datacard.azimov          = True
-  datacard.mcmc_chains     = 1
+  datacard.mcmc_chains     = args.nchains
+
+  unmarges = [ ["ttbar", "colourFlipUp"],["ttbar", "erdOnUp"],["ttbar", "QCDbasedUp"] ]
+  for chname, sys in unmarges:
+    dcard = copy.deepcopy(datacard)
+    dcard.name = "expected_" + dcard.name + "_" + sys
+
+    for chanal in dcard.chanals:
+      if chanal.name != chname : continue
+      chanal.alt_hist_name = chname + "_" + sys
+
+    dcard.save( args.mode.split(" ") )
   
   params = []
   for chanal in datacard.chanals: params += chanal.parameters
@@ -351,21 +373,6 @@ def sys_impact(args):
       print chanal.name
       print [p.name for p in chanal.parameters]
       print [p.options for p in chanal.parameters]
-
-  dcard_exp  = copy.deepcopy(dcard)
-  dcard_exp.name = "expected_"+dcard.name + ""
-  dcard_exp.save( args.mode.split(" ") )
-
-  unmarges = [ ["ttbar", "colourFlipUp"],["ttbar", "erdOnUp"],["ttbar", "QCDbasedUp"] ]
-  for chname, sys in unmarges:
-    dcard = copy.deepcopy(datacard)
-    dcard.name = "expected_" + dcard.name + "_" + sys
-
-    for chanal in dcard.chanals:
-      if chanal.name != chname : continue
-      chanal.toy_hist_name = channel + "_" + sys
-
-    dcard.save( args.mode.split(" ") )
   
 
   return None;
@@ -383,6 +390,7 @@ if __name__ == "__main__":
   parser.add_argument('--input_unmarg', dest='input_unmarg', type=str,   default='', help='root input unmarginal systematic file name')
   parser.add_argument('--mode',       dest='mode',       type=str,   default="latex cl theta", help='')
   parser.add_argument('--signal_norm',dest='signal_norm',type=float, default=1.0, help='')
+  parser.add_argument('--nchains',dest='nchains',type=int, default=1, help='')
   args = parser.parse_args()
 
   print "create_card.py call ..."
@@ -397,7 +405,7 @@ if __name__ == "__main__":
       datacard.input_file_mc   = args.input
       datacard.input_file_data = args.input_data
       datacard.mcmc_iters      = args.niters
-      datacard.mcmc_chains     = 1
+      datacard.mcmc_chains     = args.nchains
       datacard.dice_poisson    = False
       datacard.dice_systematic = False
       datacard.azimov          = True
