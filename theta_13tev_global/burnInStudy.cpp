@@ -8,22 +8,16 @@ using namespace mRoot;
 /*
   0%, 5%, 10%, 15%, 20%, 25% ...
 */
+vector <double> burn_fracs = {0.0, 0.05, 0.10, 0.15, 0.20, 0.25};
 
-double burnInStudy(string filename, string par_name, string output_name){
-  TFile file( filename.c_str() );
-
-  file.ls();
-
-  TTree *tree = dynamic_cast<TTree*>(file.Get("chain_1"));
-  if(not tree){
-    msg("Cant get \"chain_1\" from file ");
-    return 1;
-  }
+int burn_hist(TFile * file, string tname, string par_name, string output_name_prefix){
+  TTree *tree = (TTree*)(file->Get( tname.c_str() ));
+  cout << "process " << tname << " ... " << endl;
+  if(not tree) return 0;
 
   Int_t weight;
   tree->SetBranchAddress("weight", &weight);
   vector <MyParameter*> parameters;
-  vector <double> burn_fracs = {0.0, 0.05, 0.10, 0.15, 0.20, 0.25};
   TObjArray * mycopy = tree->GetListOfBranches();
   TIter iObj(mycopy);
   while (TObject* obj = iObj()) {
@@ -58,7 +52,6 @@ double burnInStudy(string filename, string par_name, string output_name){
 
     cout << hist->GetName() << " ---- " << hist->GetMean() << " - " << l << " " << c << " " << u << endl;
 
-    new TColor(1700+counter, 1. - counter / 10., 0. + counter / 10., 0.5);
     if(not counter){
       hist->Draw("HIST");
       mRoot::tune_hist(hist);
@@ -68,12 +61,17 @@ double burnInStudy(string filename, string par_name, string output_name){
       hist->Rebin( hist->GetXaxis()->GetNbins()/parameters.at(0)->hist->GetXaxis()->GetNbins());
     }
 
+    string x_title = hist->GetTitle();
+    if( x_title == "sigma_t_ch" ) x_title = "#sigma_{t-ch} / #sigma_{t_ch}^{SM}";
+
     hist->Scale(1./norm, "width");
     hist->SetLineWidth(2);
     hist->SetFillStyle(3013);
     hist->SetLineColor(1700+counter);
     hist->SetFillColor(1700+counter);
     hist->SetStats(false);
+    hist->SetTitle("");
+    hist->GetXaxis()->SetTitle( x_title.c_str() );
 
     std::string entry_string = to_string(burn_fracs.at(i)).substr(0,4);
     entry_string += "     -#sigma,mean,+#sigma = " + to_string(l).substr(0,5) + " " + to_string(c).substr(0,5) + " " + to_string(u).substr(0,5);
@@ -83,9 +81,28 @@ double burnInStudy(string filename, string par_name, string output_name){
   }
 
   leg->Draw();
-  canv_hists->Print( output_name.c_str() );
-  cout << "done!" << endl;
-  return 0;
+  canv_hists->Print( (output_name_prefix + "_" + tname + ".png" ).c_str() );
+  canv_hists->Print( (output_name_prefix + "_" + tname + ".pdf" ).c_str() );
+  return true;
+}
+
+
+void burnInStudy(string filename, string par_name, string output_name_prefix){
+  cout << "burnInStudy(" + filename << "," + par_name + "," + output_name_prefix << ") ..." << endl;
+  TFile file( filename.c_str() );
+  file.ls();
+
+  for(int counter = 0; counter < burn_fracs.size(); counter++)
+    new TColor(1700+counter, 1. - counter / 10., 0. + counter / 10., 0.5);
+
+  int index = 1;
+  while(true){
+    int answer = burn_hist(& file, "chain_" + to_string(index), par_name, output_name_prefix);
+    if(not answer) break;
+    index++;
+  }
+
+  cout << "burnInStudy(): done ..." << endl;
 }
 
 

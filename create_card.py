@@ -10,7 +10,7 @@ import AutoDatacard as atd
 
 import math
 def qcd_jul(args):
-  datacard = atd.DatacardMaster("qcd_jul", args.nbins)
+  datacard = atd.DatacardMaster("qcd", args.nbins)
 
   chanal_qcd   = atd.Chanal( "QCD" )
   chanal_other = atd.Chanal( "other" )
@@ -32,8 +32,8 @@ def qcd_jul(args):
   datacard.mcmc_iters  = args.niters
   return datacard
 
-def sm_jul(args):
-  datacard = atd.DatacardMaster("sm_jul", args.nbins)
+def sm(args):
+  datacard = atd.DatacardMaster("sm", args.nbins)
 
   chanals_names = [
     "t_ch",    31./207., '(-0.5,0.5)', # 0.10
@@ -54,9 +54,9 @@ def sm_jul(args):
   mult_pars = [ "lumi" ]
   mult_errs = [ 0.025  ]
 
-  interp_pars  = ["TagRate", "MistagRate" ]
   interp_pars  = ["jes", "lf", "hf", "hfstats1", "hfstats2", "lfstats1", "lfstats2", "cferr1", "cferr2" ]
-  interp_pars += ["UnclMET", "PileUp", "pdf", "PUJetIdTag", "MER"]
+  interp_pars += ["PileUp", "pdf"]
+  interp_pars += ["UnclMET", "PUJetIdTag", "MER"]
   interp_pars += ["JER_eta0_193", "JER_eta193_25", "JER_eta25_3_p0_50", "JER_eta25_3_p50_Inf", "JER_eta3_5_p0_50", "JER_eta3_5_p50_Inf"]
   interp_pars += ["JEC_eta0_25", "JEC_eta25_5"]
   interp_pars += ["LepId", "LepTrig", "LepIso"]
@@ -65,6 +65,7 @@ def sm_jul(args):
   xsr_pars     = ["Isr", "Fsr"]
   interp_pars += xsr_pars
 
+  has_muRmuF, has_xsr = [], []
   has_muRmuF = ["s_ch", "ttbar", "WQQ", "Wb", "Wc", "Wother", "DY"]
   has_xsr    = ["ttbar", "tW_ch"]
 
@@ -96,9 +97,9 @@ def sm_jul(args):
 
   hdamp_par  = atd.Parameter( "hdamp", "gauss", "shape")
   UETune_par = atd.Parameter( "UETune", "gauss", "shape")
-
-  with_hdamp  = ["ttbar", "tW_ch"]
-  with_UETune = ["ttbar", "tW_ch"]
+  with_hdamp, with_UETune  = [], []
+  # with_hdamp  = ["ttbar", "tW_ch"]
+  # with_UETune = ["ttbar", "tW_ch"]
 
   # define chanals
   for name, err, rang in zip( chanals_names[::3], chanals_names[1::3], chanals_names[2::3] ):
@@ -132,8 +133,8 @@ def sm_jul(args):
 
   return datacard
 
-def fcnc_1d_jul(args, coupling_hist_name):
-  datacard = atd.DatacardMaster("fcnc_1d_jul_CHANGE_THIS_NAME", args.nbins)
+def fcnc_1d(args, coupling_hist_name):
+  datacard = atd.DatacardMaster("fcnc_1d_CHANGE_THIS_NAME", args.nbins)
 
   chanals_names = [
     "t_ch",    31./207., '(-0.5,0.5)', # 0.10
@@ -200,9 +201,9 @@ def fcnc_1d_jul(args, coupling_hist_name):
 
   hdamp_par  = atd.Parameter( "hdamp", "gauss", "shape")
   UETune_par = atd.Parameter( "UETune", "gauss", "shape")
-
-  with_hdamp  = ["ttbar", "tW_ch"]
-  with_UETune = ["ttbar", "tW_ch"]
+  with_hdamp, with_UETune  = [], []
+  # with_hdamp  = ["ttbar", "tW_ch"]
+  # with_UETune = ["ttbar", "tW_ch"]
 
   # define chanals
   for name, err, rang in zip( chanals_names[::3], chanals_names[1::3], chanals_names[2::3] ):
@@ -210,52 +211,51 @@ def fcnc_1d_jul(args, coupling_hist_name):
     chanal.parameters = copy.copy(common_mult_pars)
 
     interp_pars = []
+    if name in with_hdamp  : interp_pars += [ hdamp_par  ]
+    if name in with_UETune : interp_pars += [ UETune_par ]
+
     for param in common_interp_pars:
       if param.name in ren_pars  and name not in has_red : continue
       if param.name in xsr_pars  and name not in has_xsr : continue
       if param.name in pss_names : continue
       interp_pars += [ param ]
 
-    if name not in ["fcnc_tug", "fcnc_tcg"]:
+    if name == "fcnc_tcg" :
+      norm_parameter = atd.Parameter("KC", "flat_distribution", "mult")
+      norm_parameter.options["mean"]  = 0.0
+      norm_parameter.options["range"] = '(0.0,4.0)'
+      chanal.parameters += [ norm_parameter, norm_parameter ]
+      chanal.used_in_toydata = False
+    elif name == "fcnc_tug" :
+      norm_parameter = atd.Parameter("KU", "flat_distribution", "mult")
+      norm_parameter.options["mean"]  = 0.0
+      norm_parameter.options["range"] = '(0.0,4.0)'
+      chanal.parameters += [ norm_parameter, norm_parameter ]
+      chanal.used_in_toydata = False
+    else :
       norm_parameter = atd.Parameter( "sigma_" + name, "log_normal", "mult")
       norm_parameter.options["mean"]    =  0.0
       norm_parameter.options["width"]   =  err
       norm_parameter.options["range"] = '(-5.0,5.0)'
       chanal.parameters += [ norm_parameter ]
-    if name == "fcnc_tcg" :
-      norm_parameter = atd.Parameter("KC", "flat_distribution", "mult")
-      norm_parameter.options["mean"]  = 0.0
-      norm_parameter.options["range"] = '(0.0,4.0)'
-      chanal.parameters += [ norm_parameter ]
-      chanal.used_in_toydata = False
-    if name == "fcnc_tug" :
-      norm_parameter = atd.Parameter("KU", "flat_distribution", "mult")
-      norm_parameter.options["mean"]  = 0.0
-      norm_parameter.options["range"] = '(0.0,4.0)'
-      chanal.parameters += [ norm_parameter ]
-      chanal.used_in_toydata = False
-    if name == "ttbar" :
-      chanal.parameters += [ hdamp_par, UETune_par ]
-    if name == "tW_ch" :
-      chanal.parameters += [ hdamp_par ]
 
     if name != "QCD" : chanal.parameters += common_interp_pars
     datacard.chanals += [ chanal ]
 
   return datacard
 
-def fcnc_tug_jul(args):
-  datacard = fcnc_1d_jul(args, "fcnc_tug")
-  datacard.name = "fcnc_tug_jul"
+def FcncTugModel(args):
+  datacard = fcnc_1d(args, "fcnc_tug")
+  datacard.name = "FcncTugModel"
   return datacard
 
-def fcnc_tcg_jul(args):
-  datacard = fcnc_1d_jul(args, "fcnc_tcg")
-  datacard.name = "fcnc_tcg_jul"
+def FcncTcgModel(args):
+  datacard = fcnc_1d(args, "fcnc_tcg")
+  datacard.name = "FcncTcgModel"
   return datacard
 
 def expected_sm(args):
-  datacard = sm_jul(args)
+  datacard = sm(args)
   datacard.model_name_toy    = "expected_data"
 
   datacard.input_file_mc   = args.input

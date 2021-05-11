@@ -2,11 +2,11 @@
 
 #---------- 0. Please Set Parameters
 
-nbins=10
-niters=1250000
+nbins=20
+niters=500000
 release="2021_deep" # "2020_novenber_NoIsoCut"
 burn_in_frac=0.1 
-nchains=2
+nchains=3
 
 mode=$1
 #  possible modes:
@@ -109,21 +109,17 @@ IFS=" " read QCD_low QCD_norm QCD_upp <<< "`cat $workdir/qcd/getQuantiles_temp.t
 echo "$myname, QCD norm factors = $QCD_low $QCD_norm $QCD_upp ..."
 
 #---------- 3. Create histogramms file
-make_hists_sm(){
+make_hists(){
   nbins_=$1
   QCD_norm_=$2
   qcd_cut_=$3
+  mode=$4
 
-  root -q -b -l "$cfgdir/tree_to_hists.C(\"SM\", \""$release" SIG\", \"hists_SM.root\", $nbins_, $QCD_norm_, $qcd_cut_)"
-  root -q -b -l "$srcdir/histsPlot.cpp(\"SM_before\",\"hists_SM.root\")"
-  root -q -b -l "$srcdir/histsChecker.cpp(\"hists_SM.root\",\"SM_\", \"\", 1)"
-  root -q -b -l "$srcdir/histsChecker.cpp(\"hists_SM.root\",\"SMDIFF_\", \"diff\", 1)"
-  root -q -b -l "$srcdir/histsChecker.cpp(\"hists_SM.root\",\"SMDIFFPERCENT_\", \"diff percent\", 1)"
-
-  # root -q -b -l "$cfgdir/tree_to_hists.C(\"SM\", \""$release" BACK\", \"hists_BG.root\", $nbins_, $QCD_norm_, $qcd_cut_)"
-  # root -q -b -l "$srcdir/histsPlot.cpp(\"BG_before\",\"hists_BG.root\")"
-  # root -q -b -l "$srcdir/histsChecker.cpp(\"hists_BG.root\",\"BG_\", \"\", 1)"
-  # root -l -b -q "$cfgdir/combine.C(\"hists_SM.root\", \"hists_BG.root\", \"hists_COMB.root\")"
+  root -q -b -l "$cfgdir/tree_to_hists.C(\"$mode\", \""$release" SIG\", \"hists_"$mode".root\", $nbins_, $QCD_norm_, $qcd_cut_)"
+  root -q -b -l "$srcdir/histsPlot.cpp(\""$mode"_before\",\"hists_"$mode".root\")"
+  root -q -b -l "$srcdir/histsChecker.cpp(\"hists_"$mode".root\",\""$mode"_\", \"\", 1)"
+  root -q -b -l "$srcdir/histsChecker.cpp(\"hists_"$mode".root\",\""$mode"DIFF_\", \"diff\", 1)"
+  root -q -b -l "$srcdir/histsChecker.cpp(\"hists_"$mode".root\",\""$mode"DIFFPERCENT_\", \"diff percent\", 1)"
   return
 }
 
@@ -132,89 +128,113 @@ if [ "$mode" = "hists" ] || [ "$mode" = "full" ]; then
   submode=$2
   if [ "$submode" = "sm" ] || [ "$submode" = "sm_all" ] || [ "$submode" = "all" ]; then
     mkdir -p "$workdir/hists" && cd "$_"
-    make_hists_sm $nbins $QCD_norm 0.70 
+    make_hists $nbins $QCD_norm 0.70 SM
   fi
   if [ "$submode" = "sm_qcd" ] || [ "$submode" = "sm_all" ]  || [ "$submode" = "all" ]; then
-    for QCD_qut in "0.60" "0.65" "0.70" "0.75" "0.80"; do
+    for QCD_qut in "0.50" "0.55" "0.60" "0.65" "0.70" "0.75" "0.80" "0.85" "0.90" "0.95"; do
       mkdir -p "$workdir/hists/QCD_"$QCD_qut && cd "$_"
-      make_hists_sm $nbins $QCD_norm $QCD_qut &
+      make_hists $nbins $QCD_norm $QCD_qut  SM &
     done
     wait
   fi
   if [ "$submode" = "sm_bins" ] || [ "$submode" = "sm_all" ]  || [ "$submode" = "all" ]; then
-    for nbins_alt in 8 9 10 11 12; do
+    for nbins_alt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
       mkdir -p "$workdir/hists/bins_"$nbins_alt && cd "$_"
-      make_hists_sm $nbins_alt $QCD_norm 0.70 &
+      make_hists $nbins_alt $QCD_norm 0.70 SM &
     done
     wait
   fi
 
   if [ "$package" = "fcnc" ] || [ "$package" = "all" ]; then
     mkdir -p "$workdir/hists_fcnc" && cd "$_"
-    root -q -b -l "$cfgdir/tree_to_hists.C(\"FCNC_tcg\", \""$release" SIG\", \"hists_FCNC_tcg.root\", $nbins, $QCD_norm, 0.70)"
-    root -q -b -l "$cfgdir/tree_to_hists.C(\"FCNC_tug\", \""$release" SIG\", \"hists_FCNC_tug.root\", $nbins, $QCD_norm, 0.70)"
+    make_hists $nbins $QCD_norm 0.70 FCNC_tcg
+    make_hists $nbins $QCD_norm 0.70 FCNC_tug
+  fi
 
-    root -q -b -l "$srcdir/histsPlot.cpp(\"FCNC_tug\",\"hists_FCNC_tug.root\")"
-    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tug.root\",\"FCNC_tug_\", \"\", 1)"
-    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tug.root\",\"FCNC_tug_\", \"diff\", 1)"
-    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tug.root\",\"FCNC_tug_\", \"diff percent\", 1)"
-
-    root -q -b -l "$srcdir/histsPlot.cpp(\"FCNC_tcg\",\"hists_FCNC_tcg.root\")"
-    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tcg.root\",\"FCNC_tcg_\", \"\", 1)"
-    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tug.root\",\"FCNC_tug_\", \"diff\", 1)"
-    root -q -b -l "$srcdir/histsChecker.cpp(\"hists_FCNC_tug.root\",\"FCNC_tug_\", \"diff percent\", 1)"
+  if [ "$submode" = "fcnc_qcd" ] || [ "$submode" = "fcnc_all" ]  || [ "$submode" = "all" ]; then
+    for QCD_qut in "0.50" "0.55" "0.60" "0.65" "0.70" "0.75" "0.80" "0.85" "0.90" "0.95"; do
+      mkdir -p "$workdir/hists_fcnc/QCD_"$QCD_qut && cd "$_"
+      make_hists $nbins $QCD_norm $QCD_qut FCNC_tcg &
+      make_hists $nbins $QCD_norm $QCD_qut FCNC_tug &
+    done
+    wait
+  fi
+  if [ "$submode" = "fcnc_bins" ] || [ "$submode" = "fcnc_all" ]  || [ "$submode" = "all" ]; then
+    for nbins_alt in 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
+      mkdir -p "$workdir/hists_fcnc/bins_"$nbins_alt && cd "$_"
+      make_hists $nbins_alt $QCD_norm 0.70 FCNC_tcg &
+      make_hists $nbins_alt $QCD_norm 0.70 FCNC_tug &
+    done
+    wait
   fi
 
   if [ "$mode" = "hists" ]; then exit; fi
 else echo "$myname, skip recreating histogramms files"; fi
 
 #---------- 4. Run SM analyse
-make_analyse_sm(){
+make_analyse_theta(){
   input_hists=$1 # "$workdir/hists/hists_SM.root"
   nbins_=$2
+  niters_=$3
+  hist_path=$4
+  mode=$5 # sm fcnc_tug fcnc_tcg
 
-  python $cfgdir/create_card.py --fname="sm_jul" --nbins=$nbins_ --niters=$niters --input=$input_hists --mode="latex theta mRoot" --nchains=$nchains
-  $srcdir/run_theta.sh sm_jul_theta.cfg
+  python $cfgdir/create_card.py --fname=$mode --nbins=$nbins_ --niters=$niters_ --input=$input_hists --mode="latex theta mRoot" --nchains=$nchains
+  $srcdir/run_theta.sh $mode"_theta.cfg"
+
+  POI="sigma_t_ch"
+  if [ "$mode" = "fcnc_tug_model" ]; then
+    POI="KU"
+  fi
+  if [ "$mode" = "fcnc_tcg_model" ]; then
+    POI="KC"
+  fi
   
-  root -q -b -l "$srcdir/burnInStudy.cpp(\"sm_jul_theta.root\", \"sigma_t_ch\", \"BurnInStudySMTheta.png\")"
-  root -q -b -l "$srcdir/getPostHists.cpp(\"$input_hists\", \"sm_jul_mroot.txt\", \"sm_jul_theta.root\")"
-  root -q -b -l "$srcdir/histsPlot.cpp(\"SM_after\",\"postfit_hists/posthists.root\")"
-  root -q -b -l "$srcdir/histsChecker.cpp(\"$input_hists\",\"./postfit_hists/posthists.root\", \"SM_comp_\")"
+  root -q -b -l "$srcdir/burnInStudy.cpp(\""$mode"_theta.root\", \"$POI\", \"BurnInStudy"$mode"Theta\")"
+  root -q -b -l "$srcdir/getPostHists.cpp(\"$input_hists\", \""$mode"_mroot.txt\", \""$mode"_theta.root\")"
+  # root -q -b -l "$srcdir/histsPlot.cpp(\"SM_after\",\"postfit_hists/posthists.root\")"
+  # root -q -b -l "$srcdir/histsChecker.cpp(\"$input_hists\",\"./postfit_hists/posthists.root\", \"SM_comp_\")"
   
-  root -q -b -l "$srcdir/getTable.cpp(\"sm_jul_theta.root\", \"SM\", $burn_in_frac)"
-  pdflatex -interaction=batchmode getTable_SM.tex
+  root -q -b -l "$srcdir/getTable.cpp(\""$mode"_theta.root\", \"$mode\", $burn_in_frac, \"$hist_path\")"
+  pdflatex -interaction=batchmode getTable_$mode.tex
+  pdflatex -interaction=batchmode model_$mode.tex
 }
 
 if [ "$mode" = "sm" ] || [ "$mode" = "full" ]; then
   echo "$myname, SM ... "
   if [ "$package" = "def" ] || [ "$package" = "all" ]; then
-    mkdir -p "$workdir/sm" && cd "$_"
-    make_analyse_sm "$workdir/hists/hists_SM.root" 10
+    mkdir -p "$workdir/sm/def" && cd "$_"
+    make_analyse_theta "$workdir/hists/hists_SM.root" $nbins $niters
     mv getTable_SM.pdf table_sm_theta_def.pdf
   fi
 
-  if [ "$package" = "comb" ] || [ "$package" = "all" ]; then
-    mkdir -p "$workdir/sm" && cd "$_"
-    make_analyse_sm "$workdir/hists/hists_COMB.root" 20
-    mv getTable_SM.pdf table_sm_theta_comb.pdf
-  fi
-
   if [ "$package" = "qcd" ] || [ "$package" = "all" ]; then
-    #for QCD_qut in "0.60" "0.65" "0.70" "0.75" "0.80"; do
-    #  mkdir -p "$workdir/sm/QCD_"$QCD_qut && cd "$_"
-    #  make_analyse_sm "$workdir/hists/QCD_"$QCD_qut"/hists_SM.root" 10
-    #  mv "$workdir/sm/QCD_"$QCD_qut"/sm_jul_theta.root" "$workdir/sm/QCD_"$QCD_qut".root"
-    #done
+    for QCD_qut in "0.50" "0.55" "0.60" "0.65" "0.70" "0.75" "0.80" "0.85" "0.90" "0.95"; do
+      break
+      mkdir -p "$workdir/sm/QCD_"$QCD_qut && cd "$_"
+      make_analyse_theta "$workdir/hists/QCD_"$QCD_qut"/hists_SM.root" $nbins $niters
+      mv "$workdir/sm/QCD_"$QCD_qut"/sm_jul_theta.root" "$workdir/sm/QCD_"$QCD_qut".root"
+    done
     root -q -b -l "$srcdir/plotResultsForDifferentConditions.cpp(\"$workdir/sm/\", \"QCD_.+\.root\", \"sigma_t_ch\", \"t_ch_vs_QCD_cut\")"
   fi
   
   if [ "$package" = "bins" ] || [ "$package" = "all" ]; then
-    #for nbins_alt in 8 9 10 11 12; do
-    #  mkdir -p "$workdir/sm/bins_"$nbins_alt && cd "$_"
-    #  make_analyse_sm "$workdir/hists/bins_"$nbins_alt"/hists_SM.root" $nbins_alt
-    #  mv "$workdir/sm/bins_"$nbins_alt"/sm_jul_theta.root" "$workdir/sm/bins_"$nbins_alt".root"
-    #done
+    for nbins_alt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
+      break
+      mkdir -p "$workdir/sm/bins_"$nbins_alt && cd "$_"
+      make_analyse_theta "$workdir/hists/bins_"$nbins_alt"/hists_SM.root" $nbins_alt $niters
+      mv "$workdir/sm/bins_"$nbins_alt"/sm_jul_theta.root" "$workdir/sm/bins_"$nbins_alt".root"
+    done
     root -q -b -l "$srcdir/plotResultsForDifferentConditions.cpp(\"$workdir/sm/\", \"bins_.+\.root\", \"sigma_t_ch\", \"t_ch_vs_nbins\")"
+  fi
+
+  if [ "$package" = "iters" ] || [ "$package" = "all" ]; then
+    for iters in 50000 100000 200000 300000 400000 500000 750000 1000000 1500000 2000000; do
+      mkdir -p "$workdir/sm/iters_"$iters && cd "$_"
+      make_analyse_theta "$workdir/hists/hists_SM.root" $nbins $iters
+      mv "$workdir/sm/iters_"$iters"/sm_jul_theta.root" "$workdir/sm/iters_"$iters".root"
+    done
+    root -q -b -l "$srcdir/plotResultsForDifferentConditions.cpp(\"$workdir/sm/\", \"iters_.+\.root\", \"sigma_t_ch\", \"t_ch_vs_MCMC_iters\")"
   fi
 
   if [ "$mode" = "sm" ]; then exit; fi
@@ -224,23 +244,44 @@ else echo "$myname, skip sm analyse"; fi
 set -x
 if [ "$mode" = "fcnc" ] || [ "$mode" = "full" ]; then
   echo "$myname, FCNC ... "
-  mkdir -p "$workdir/fcnc" && cd "$_"
-    python $cfgdir/create_card.py --fname="fcnc_tug_jul" --nbins=$nbins --niters=$niters --input="$workdir/hists_fcnc/hists_FCNC_tug.root" --mode="latex theta" --nchains=$nchains
-    $srcdir/run_theta.sh fcnc_tug_jul_theta.cfg
-    root -q -b -l "$srcdir/burnInStudy.cpp(\"fcnc_tug_jul_theta.root\", \"KU\", \"BurnInStudyKUTheta.png\")"
-    root -q -b -l "$srcdir/getTable.cpp(\"fcnc_tug_jul_theta.root\", \"KU\", $burn_in_frac)"
-    pdflatex -interaction=batchmode getTable_KU.tex
-    mv getTable_KU.pdf table_KU_def.pdf
+  if [ "$package" = "def" ] || [ "$package" = "all" ]; then
+    mkdir -p "$workdir/fcnc/def" && cd "$_"
+    make_analyse_theta "$workdir/hists_fcnc/hists_FCNC_tug.root" $nbins $niters "$workdir/hists_fcnc/" "FcncTugModel"
+    mv getTable_fcnc_tug.pdf table_KU_def.pdf
 
-    python $cfgdir/create_card.py --fname="fcnc_tcg_jul" --nbins=$nbins --niters=$niters --input="$workdir/hists_fcnc/hists_FCNC_tcg.root" --mode="latex theta" --nchains=$nchains
-    $srcdir/run_theta.sh fcnc_tcg_jul_theta.cfg
-    root -q -b -l "$srcdir/burnInStudy.cpp(\"fcnc_tcg_jul_theta.root\", \"KC\", \"BurnInStudyKCTheta.png\")"
-    root -q -b -l "$srcdir/getTable.cpp(\"fcnc_tcg_jul_theta.root\", \"KC\", $burn_in_frac)"
-    pdflatex -interaction=batchmode getTable_KC.tex
-    mv getTable_KC.pdf table_KC_def.pdf
+    make_analyse_theta "$workdir/hists_fcnc/hists_FCNC_tcg.root" $nbins $niters "$workdir/hists_fcnc/" "FcncTcgModel"
+    mv getTable_fcnc_tcg.pdf table_KC_def.pdf
+  fi
 
-  if [ "$mode" = "sm" ]; then exit; fi
-else echo "$myname, skip sm analyse"; fi
+  if [ "$package" = "bins" ] || [ "$package" = "all" ]; then
+    for nbins_alt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
+      break;
+      mkdir -p "$workdir/fcnc/bins_"$nbins_alt && cd "$_"
+      make_analyse_theta "$workdir/hists_fcnc/bins_"$nbins_alt"/hists_FCNC_tug.root" $nbins_alt $niters "$workdir/hists_fcnc/" "FcncTugModel"
+      mv "$workdir/fcnc/bins_"$nbins_alt"/FcncTugModel_theta.root" "$workdir/fcnc/bins_FcncTugModel_"$nbins_alt".root"
+
+      make_analyse_theta "$workdir/hists_fcnc/bins_"$nbins_alt"/hists_FCNC_tcg.root" $nbins_alt $niters "$workdir/hists_fcnc/" "FcncTcgModel"
+      mv "$workdir/fcnc/bins_"$nbins_alt"/FcncTcgModel_theta.root" "$workdir/fcnc/bins_FcncTcgModel_"$nbins_alt".root"
+    done
+    root -q -b -l "$srcdir/plotResultsForDifferentConditions.cpp(\"$workdir/fcnc/\", \"bins_FcncTugModel.+\.root\", \"KU\", \"KU_vs_nbins\")"
+    root -q -b -l "$srcdir/plotResultsForDifferentConditions.cpp(\"$workdir/fcnc/\", \"bins_FcncTcgModel.+\.root\", \"KC\", \"KC_vs_nbins\")"
+  fi
+
+  if [ "$package" = "qcd" ] || [ "$package" = "all" ]; then
+    for QCD_qut in "0.50" "0.55" "0.60" "0.65" "0.70" "0.75" "0.80" "0.85" "0.90" "0.95"; do
+      mkdir -p "$workdir/fcnc/QCD_"$QCD_qut && cd "$_"
+      make_analyse_theta "$workdir/hists_fcnc/hists_FCNC_tug.root" $nbins $niters "$workdir/hists_fcnc/" "fcnc_tug_model"
+      mv getTable_fcnc_tug.pdf ../table_KU_QCD$QCD_qut.pdf
+      mv "fcnc_tug_theta.root" "../QCD_KU_"$QCD_qut".root"
+
+      make_analyse_theta "$workdir/hists_fcnc/hists_FCNC_tcg.root" $nbins $niters "$workdir/hists_fcnc/" "fcnc_tcg_model"
+      mv getTable_fcnc_tcg.pdf ../table_KC_QCD$QCD_qut.pdf
+      mv "fcnc_tcg_theta.root" "../QCD_KC_"$QCD_qut".root"
+    done
+    root -q -b -l "$srcdir/plotResultsForDifferentConditions.cpp(\"$workdir/fcnc/\", \"QCD_KC_.+\.root\", \"KC\", \"KC_vs_QCD_cut\")"
+    root -q -b -l "$srcdir/plotResultsForDifferentConditions.cpp(\"$workdir/fcnc/\", \"QCD_KU_.+\.root\", \"KU\", \"KU_vs_QCD_cut\")"
+  fi
+else echo "$myname, skip fcnc analyse"; fi
 
 if [ "$mode" = "fcnc_var" ] || [ "$mode" = "full" ]; then
   mkdir -p "$workdir/fcnc_var" && cd "$_"
