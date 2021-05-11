@@ -12,7 +12,7 @@ double get_qv(TH1D* histe, double qfrac){
     if(sum < qfrac * tot) upe = i;
     else break;
   }
-  cout << tot << " " << sum << " " << upe << " " << histe->GetBinLowEdge(upe) << " " << qfrac << endl;
+  // cout << tot << " " << sum << " " << upe << " " << histe->GetBinLowEdge(upe) << " " << qfrac << endl;
   return histe->GetBinCenter(upe);
 }
 
@@ -20,9 +20,9 @@ double getQuantiles(string filename, string par_name, double alpha=0.95, double 
   TFile *fe = TFile::Open( filename.c_str() );
   
   if(not fe) return -100;
-  fe->Print();
+  // fe->Print();
   TTree *te = dynamic_cast<TTree*>(fe->Get("chain_1"));
-  cout << te << " " << par_name << endl;
+  // cout << te << " " << par_name << endl;
   //te->Print();
 
   Double_t   kce;
@@ -86,7 +86,7 @@ void save_plot_unc(vector<string> labels, vector<double> values, string mode, do
 
     double mean_minus = (qvs_minus - qv_nominal)/qv_nominal;
     double mean_plus  = (qvs_plus  - qv_nominal)/qv_nominal;
-    cout << item  << " " << mean_minus << " " << mean_plus << endl;
+    cout << item << " " << labels.at(i) << " " << labels.at(i+1) << " " << mean_minus << " " << mean_plus << endl;
 
     items.push_back( sort_item(item, mean_minus, mean_plus) );
   }
@@ -225,7 +225,7 @@ void plotSysImpact(){
   
   gStyle->SetLabelSize(0.055, "Y");
 
-  auto dirs_all = mRoot::get_directories( "2021_jan_NoIsoCut/sys_check/sm/." ); // sys_check/cta/btag/
+  auto dirs_all = mRoot::get_directories( "2021_deep/sys_check/sm/." ); // sys_check/cta/btag/
   sort(dirs_all.begin(), dirs_all.end());
   
   vector<double> qvs;
@@ -233,24 +233,38 @@ void plotSysImpact(){
   for(auto dir : dirs_all){
     cout << dir << endl;
     if(dir == "*") continue;
-    if(dir == "sigma_t_ch_plus") continue;
+    if(dir == "sigma_t_ch_plus")  continue;
     if(dir == "sigma_t_ch_minus") continue;
+    if(dir.find("plus") == string::npos and dir.find("minus") == string::npos)  continue;
 
-    // continue;
-
-    string path = "2021_jan_NoIsoCut/sys_check/sm/" + dir + "/expected_sm_jul_"+dir+"_theta.root";
+    string path = "2021_deep/sys_check/sm/" + dir + "/expected_sm_jul_"+dir+"_theta.root";
     auto qv = getQuantiles(path, "sigma_t_ch", 0.5);
     cout << dir << " " << qv << endl;
     
-    if(qv < -50) continue;
+    if(qv < -50) qv = 0;
     
     dirs.push_back(dir);
     qvs.push_back(qv);
   }
+
+  vector<string> alters = { "colourFlipUp", "erdOnUp", "QCDbasedUp" };
+  for(string dir : alters){
+    string path = "2021_deep/sys_check/sm/" + dir + "/expected_sm_jul_"+dir+"_theta.root";
+    auto qv = getQuantiles(path, "sigma_t_ch", 0.5);
+    cout << dir << " " << qv << endl;
+    
+    dirs.push_back(dir + "_minus");
+    qvs.push_back(qv);
+
+    dirs.push_back(dir + "_plus");
+    qvs.push_back(qv);
+  }
   
-  double qv_nominal = getQuantiles("2021_jan_NoIsoCut/sys_check/sm/sigma_t_ch/expected_sm_jul_sigma_t_ch_theta.root", "sigma_t_ch", 0.5);
+  double qv_nominal = getQuantiles("2021_deep/sys_check/sm/expected/expected_sm_jul_theta.root", "sigma_t_ch", 0.5);
   
   save_plot_unc(dirs, qvs, "", qv_nominal, "sys_check");
 }
+
+
 
 

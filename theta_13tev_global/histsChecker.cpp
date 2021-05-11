@@ -47,7 +47,7 @@ void check_template(TH1 * hist){
       hist_is_ok = false;
     }
   }
-  if(hist_is_ok) msg("hist is ok ", hist->GetName());
+  // if(hist_is_ok) msg("hist is ok ", hist->GetName());
 }
 
 #include "/afs/cern.ch/user/p/pmandrik/public/global_cfg/mRootStackDrawer.cpp"
@@ -78,7 +78,7 @@ void histsChecker(TString inputFileName, TString postfix, string diff_mode, int 
   
     TH1* h = (TH1*)hist;
 
-    cout << " " << h->GetName() << " ... " << endl;
+    // cout << " " << h->GetName() << " ... " << endl;
     check_template(h);
 
     auto shifts = get_all_from_folder(file, string(hist->GetName()) + "_.+", "("+string(hist->GetName()) + "_alt.*)|(.+_weight_.+)");
@@ -154,7 +154,7 @@ void histsChecker(TString inputFileName, TString postfix, string diff_mode, int 
     canv->cd(12);
     stack->Draw("hist f");
 
-    canv->Print(postfix + TString(hist->GetTitle()) + TString(".png"));
+    canv->Print(postfix + TString(hist->GetTitle()) + TString(".pdf"));
   }
 
 }
@@ -187,7 +187,7 @@ void histsChecker(TString inputFileName_A, TString inputFileName_B, TString post
 
     hist_a->SetMaximum( std::max( hist_b->GetMaximum(), hist_a->GetMaximum()) * 1.01 );
 
-    canv->Print(postfix + TString(hist_a->GetTitle()) + TString(".png"));
+    canv->Print(postfix + TString(hist_a->GetTitle()) + TString(".pdf"));
   }
 
 }
@@ -233,7 +233,7 @@ void histsChecker(TString inputFileName, TString postfix, int mode){
       }
     }
 
-    canv->Print(postfix + TString(hist->GetTitle()) + TString(".png"));
+    canv->Print(postfix + TString(hist->GetTitle()) + TString(".pdf"));
   }
 
 }

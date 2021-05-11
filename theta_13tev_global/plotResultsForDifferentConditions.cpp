@@ -8,19 +8,37 @@
 
 pm::Limits get_result_from_file(string file_name, string par_name, float burn_factor = 0.10){
   TFile file( file_name.c_str() );
-  TTree *tree = dynamic_cast<TTree*>(file.Get("chain_1"));
+
+  pm::Limits limit;
+  int chain_index = 0;
+
+  while(true){
+    chain_index++;
+    string cname = "chain_" + to_string( chain_index );
+    TTree * tree = (TTree*)(file.Get(cname.c_str()));
+    if(not tree) break;
   
-  Int_t weight;
-  tree->SetBranchAddress("weight",  &weight);
+    Int_t weight;
+    tree->SetBranchAddress("weight",  &weight);
   
-  MyParameter * parameter = new MyParameter(tree, par_name, burn_factor);
-  for(int l = 0; l < (int)tree->GetEntries(); ++l){
-    tree->GetEntry(l);
-    parameter->ReadEntrie( weight );
+    MyParameter * parameter = new MyParameter(tree, par_name, burn_factor);
+    for(int l = 0; l < (int)tree->GetEntries(); ++l){
+      tree->GetEntry(l);
+      parameter->ReadEntrie( weight );
+    }
+
+    limit += pm::get_th1_limits( parameter->hist );
+    // pm::get_th1_limits( parameter->hist ).Print();
   }
+
+  limit.c_1s /= max(1, chain_index-1);
+  limit.u_1s /= max(1, chain_index-1);
+  limit.u_2s /= max(1, chain_index-1);
+  limit.l_1s /= max(1, chain_index-1);
+  limit.l_2s /= max(1, chain_index-1);
   
-  TH1D * hist = parameter->hist;
-  return pm::get_th1_limits( hist );
+  limit.Print();
+  return limit;
 }
 
 void plotResultsForDifferentConditions(std::string input_folder_name, std::string pattern, std::string parameter_name, std::string graph_label){
@@ -39,9 +57,11 @@ void plotResultsForDifferentConditions(std::string input_folder_name, std::strin
       cout << "plotResultsForDifferentConditions(): Can't parce file name " << fname << endl;
       return;
     }
-    x_vals.push_back( atof( fname_parts.at(1).c_str() ) );
+    x_vals.push_back( atof( fname_parts.at(2).c_str() ) );
+    cout << fname << " " << atof( fname_parts.at(2).c_str() ) << endl;
     
     pm::Limits limit = get_result_from_file( input_folder_name + "/" + fname, parameter_name );
+    if(limit.c_1s <= 0) continue;
     // l_1s, c_1s, u_1s, l_2s, c_2s, u_2s
     y_vals.push_back( limit.c_1s );
     y_vals_1s_u.push_back( limit.u_1s );
