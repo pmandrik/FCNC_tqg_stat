@@ -247,7 +247,7 @@ double getTable(string filename, string postfix, double def_bfrac, string hists_
     out_string += "\n \\newpage \n";
     out_string += "\n \\textbf{MCMC OUPUT CHAINS} \\\\ \n";
     int new_line = 0;
-    chains_path = ("chains_" + postfix);
+    string chains_path = ("chains_" + postfix);
     ReplaceStringInPlace(chains_path, string("_"), string("X"));
     gSystem->mkdir( chains_path.c_str() );
     for(auto param : parameters){

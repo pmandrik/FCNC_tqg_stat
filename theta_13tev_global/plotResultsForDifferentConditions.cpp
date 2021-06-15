@@ -50,15 +50,18 @@ void plotResultsForDifferentConditions(std::string input_folder_name, std::strin
   vector<float> x_vals, y_vals;
   vector<float> y_vals_1s_u, y_vals_2s_u, y_vals_1s_d, y_vals_2s_d;
   std::string x_axis_name;
+
+  cout << "fnames.size() = " << fnames.size() << endl;
   for(string fname : fnames){
     vector<string> fname_parts;
     pm::split_string(fname, fname_parts, "_");
+    cout << fname << " " << fname_parts.size() << endl;
     if(fname_parts.size() < 2){
       cout << "plotResultsForDifferentConditions(): Can't parce file name " << fname << endl;
       return;
     }
-    x_vals.push_back( atof( fname_parts.at(2).c_str() ) );
-    cout << fname << " " << atof( fname_parts.at(2).c_str() ) << endl;
+    x_vals.push_back( atof( fname_parts.at(1).c_str() ) );
+    cout << fname << " " << atof( fname_parts.at(1).c_str() ) << endl;
     
     pm::Limits limit = get_result_from_file( input_folder_name + "/" + fname, parameter_name );
     if(limit.c_1s <= 0) continue;

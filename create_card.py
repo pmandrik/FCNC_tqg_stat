@@ -9,7 +9,7 @@ import AutoDatacard as atd
 
 
 import math
-def qcd_jul(args):
+def qcd(args):
   datacard = atd.DatacardMaster("qcd", args.nbins)
 
   chanal_qcd   = atd.Chanal( "QCD" )
@@ -56,18 +56,19 @@ def sm(args):
 
   interp_pars  = ["jes", "lf", "hf", "hfstats1", "hfstats2", "lfstats1", "lfstats2", "cferr1", "cferr2" ]
   interp_pars += ["PileUp", "pdf"]
-  interp_pars += ["UnclMET", "PUJetIdTag", "MER"]
+  interp_pars += ["UnclMET", "MER"] # PUJetIdTag
   interp_pars += ["JER_eta0_193", "JER_eta193_25", "JER_eta25_3_p0_50", "JER_eta25_3_p50_Inf", "JER_eta3_5_p0_50", "JER_eta3_5_p50_Inf"]
   interp_pars += ["JEC_eta0_25", "JEC_eta25_5"]
   interp_pars += ["LepId", "LepTrig", "LepIso"]
   muRmuF_pars  = ["Fac", "Ren", "RenFac"]
   interp_pars += muRmuF_pars
   xsr_pars     = ["Isr", "Fsr"]
-  interp_pars += xsr_pars
+  #interp_pars += xsr_pars
+  #interp_pars = []
 
   has_muRmuF, has_xsr = [], []
   has_muRmuF = ["s_ch", "ttbar", "WQQ", "Wb", "Wc", "Wother", "DY"]
-  has_xsr    = ["ttbar", "tW_ch"]
+  #has_xsr    = ["ttbar", "tW_ch"]
 
   pss = ["_G2GG_muR_", "_G2QQ_muR_", "_Q2QG_muR_", "_X2XG_muR_", "_G2GG_cNS_", "_G2QQ_cNS_", "_Q2QG_cNS_", "_X2XG_cNS_"]
   pss = []
